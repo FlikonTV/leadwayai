@@ -4,7 +4,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog";
-import { Clock, Shield, Calendar, ArrowRight, CheckCircle } from "lucide-react";
+import { Clock, Shield, Calendar, ArrowRight, CheckCircle, Sparkles, Zap } from "lucide-react";
 
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_ai-readiness-scan/artifacts/1nnj8el7_leadway_logo-removebg-preview.png";
 const TRAINING_DATE = new Date("2026-04-08T09:00:00");
@@ -15,6 +15,7 @@ const LandingPage = () => {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [hoveredFeature, setHoveredFeature] = useState(null);
 
   useEffect(() => {
     const calculateCountdown = () => {
@@ -59,32 +60,33 @@ const LandingPage = () => {
   };
 
   const CountdownUnit = ({ value, label }) => (
-    <div className="countdown-box rounded-lg px-4 py-3 md:px-6 md:py-4 text-center">
-      <div className="text-2xl md:text-4xl font-bold text-white font-heading">{value.toString().padStart(2, '0')}</div>
-      <div className="text-xs md:text-sm text-gray-300 uppercase tracking-wider mt-1">{label}</div>
+    <div className="group relative bg-white/5 border border-gold/30 rounded-lg px-3 py-2 md:px-4 md:py-3 text-center hover:bg-gold/10 hover:border-gold/50 transition-all duration-300 hover:scale-105 cursor-default">
+      <div className="text-xl md:text-3xl font-bold text-white font-heading transition-colors group-hover:text-gold">
+        {value.toString().padStart(2, '0')}
+      </div>
+      <div className="text-[10px] md:text-xs text-gray-400 uppercase tracking-wider group-hover:text-gray-300 transition-colors">{label}</div>
+      <div className="absolute inset-0 bg-gold/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
     </div>
   );
+
+  const features = [
+    { icon: Sparkles, text: "Share your AI experience", color: "text-blue-400" },
+    { icon: Zap, text: "Identify workflow opportunities", color: "text-amber-400" },
+    { icon: Shield, text: "Explore responsible AI practices", color: "text-green-400" },
+    { icon: CheckCircle, text: "Define your capstone project", color: "text-purple-400" }
+  ];
 
   return (
     <div className="min-h-screen bg-navy hero-pattern">
       {/* Header */}
-      <header className="sticky top-0 z-50 glass bg-navy/85 border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <header className="sticky top-0 z-50 glass bg-navy/90 border-b border-white/10">
+        <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img 
-                src={LOGO_URL} 
-                alt="Leadway Logo" 
-                className="h-10 md:h-12 w-auto"
-                data-testid="leadway-logo"
-              />
-              <span className="text-white font-heading text-lg md:text-xl font-medium hidden sm:block">Leadway Group</span>
+            <div className="flex items-center gap-2">
+              <img src={LOGO_URL} alt="Leadway Logo" className="h-8 w-auto" data-testid="leadway-logo" />
+              <span className="text-white font-heading text-base font-medium hidden sm:block">Leadway Group</span>
             </div>
-            <a 
-              href="/admin" 
-              className="text-gray-400 hover:text-gold text-sm transition-colors"
-              data-testid="admin-link"
-            >
+            <a href="/admin" className="text-gray-400 hover:text-gold text-sm transition-all hover:scale-105" data-testid="admin-link">
               Admin
             </a>
           </div>
@@ -92,90 +94,103 @@ const LandingPage = () => {
       </header>
 
       {/* Hero Section */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Left Column - Content */}
-          <div className="animate-fade-in">
-            <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/30 rounded-full px-4 py-2 mb-6">
-              <Calendar className="w-4 h-4 text-gold" />
-              <span className="text-gold text-sm font-medium">April 8-10, 2026</span>
+      <main className="max-w-6xl mx-auto px-4 py-8 md:py-12">
+        <div className="grid lg:grid-cols-5 gap-8 items-start">
+          {/* Left Column - Content (3 cols) */}
+          <div className="lg:col-span-3 animate-fade-in">
+            <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/30 rounded-full px-3 py-1.5 mb-4 hover:bg-gold/20 transition-colors cursor-default">
+              <Calendar className="w-3.5 h-3.5 text-gold" />
+              <span className="text-gold text-xs font-medium">April 8-10, 2026</span>
             </div>
             
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium text-white leading-tight mb-6">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-heading font-medium text-white leading-tight mb-4">
               AI Readiness &<br />
               <span className="gradient-text">Opportunity Scan</span>
             </h1>
             
-            <p className="text-lg md:text-xl text-gray-300 mb-8 leading-relaxed max-w-xl">
-              Help us understand your current AI familiarity and identify opportunities to transform your workflows. 
-              Your responses will shape our upcoming in-person AI training.
+            <p className="text-base text-gray-300 mb-6 leading-relaxed max-w-lg">
+              Help us understand your AI familiarity and identify opportunities to transform your workflows. 
+              Your responses will shape our in-person training.
             </p>
 
-            {/* Info Cards */}
-            <div className="grid sm:grid-cols-2 gap-4 mb-10">
-              <div className="flex items-start gap-3 bg-white/5 rounded-lg p-4">
-                <Clock className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
-                <div>
-                  <div className="text-white font-medium">15-20 minutes</div>
-                  <div className="text-gray-400 text-sm">Estimated completion time</div>
-                </div>
+            {/* Compact Info Row */}
+            <div className="flex flex-wrap gap-3 mb-6">
+              <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2 hover:bg-white/10 transition-colors">
+                <Clock className="w-4 h-4 text-gold" />
+                <span className="text-white text-sm">15-20 min</span>
               </div>
-              <div className="flex items-start gap-3 bg-white/5 rounded-lg p-4">
-                <Shield className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
-                <div>
-                  <div className="text-white font-medium">Confidential</div>
-                  <div className="text-gray-400 text-sm">Your responses are secure</div>
-                </div>
+              <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2 hover:bg-white/10 transition-colors">
+                <Shield className="w-4 h-4 text-gold" />
+                <span className="text-white text-sm">Confidential</span>
               </div>
             </div>
 
             <Button 
               onClick={handleStartAssessment}
-              className="btn-gradient text-white font-semibold px-8 py-6 text-lg rounded-lg shadow-lg shadow-gold/20 animate-pulse-gold"
+              className="btn-gradient text-white font-semibold px-6 py-5 text-base rounded-lg shadow-lg shadow-gold/20 hover:shadow-gold/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
               data-testid="start-assessment-btn"
             >
               Start Assessment
-              <ArrowRight className="ml-2 w-5 h-5" />
+              <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
 
-            <p className="text-gray-500 text-sm mt-4 italic">
+            <p className="text-gray-500 text-xs mt-3 italic">
               This is not a test. There are no right or wrong answers.
             </p>
           </div>
 
-          {/* Right Column - Countdown & Visual */}
-          <div className="lg:pl-8">
+          {/* Right Column - Countdown & Features (2 cols) */}
+          <div className="lg:col-span-2 space-y-4">
             {/* Countdown Timer */}
-            <div className="bg-white/5 rounded-2xl p-6 md:p-8 border border-white/10 mb-8">
-              <h2 className="text-white font-heading text-xl md:text-2xl font-medium mb-2 text-center">
+            <div className="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-white/20 transition-colors">
+              <h2 className="text-white font-heading text-lg font-medium mb-1 text-center">
                 Training Begins In
               </h2>
-              <p className="text-gray-300 text-sm text-center mb-6">April 8-10, 2026 | In-Person Event</p>
+              <p className="text-gray-300 text-xs text-center mb-4">April 8-10, 2026</p>
               
-              <div className="grid grid-cols-4 gap-2 md:gap-4" data-testid="countdown-timer">
+              <div className="grid grid-cols-4 gap-2" data-testid="countdown-timer">
                 <CountdownUnit value={countdown.days} label="Days" />
-                <CountdownUnit value={countdown.hours} label="Hours" />
-                <CountdownUnit value={countdown.minutes} label="Mins" />
-                <CountdownUnit value={countdown.seconds} label="Secs" />
+                <CountdownUnit value={countdown.hours} label="Hrs" />
+                <CountdownUnit value={countdown.minutes} label="Min" />
+                <CountdownUnit value={countdown.seconds} label="Sec" />
               </div>
             </div>
 
-            {/* What to Expect */}
-            <div className="bg-white/5 rounded-2xl p-6 md:p-8 border border-white/10">
-              <h3 className="text-white font-heading text-lg md:text-xl font-medium mb-4">What to Expect</h3>
-              <ul className="space-y-3">
-                {[
-                  "Share your current AI experience and familiarity",
-                  "Identify workflow pain points and opportunities",
-                  "Explore governance and responsible AI practices",
-                  "Define your capstone opportunity area"
-                ].map((item, index) => (
-                  <li key={index} className="flex items-start gap-3 text-gray-300">
-                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
-                    <span>{item}</span>
+            {/* What to Expect - Interactive List */}
+            <div className="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-white/20 transition-colors">
+              <h3 className="text-white font-heading text-base font-medium mb-3">What to Expect</h3>
+              <ul className="space-y-2">
+                {features.map((item, index) => (
+                  <li 
+                    key={index} 
+                    className={`flex items-center gap-2 p-2 rounded-lg cursor-default transition-all duration-200 ${
+                      hoveredFeature === index ? 'bg-white/10 translate-x-1' : 'hover:bg-white/5'
+                    }`}
+                    onMouseEnter={() => setHoveredFeature(index)}
+                    onMouseLeave={() => setHoveredFeature(null)}
+                  >
+                    <item.icon className={`w-4 h-4 ${item.color} transition-transform ${hoveredFeature === index ? 'scale-110' : ''}`} />
+                    <span className="text-gray-300 text-sm">{item.text}</span>
                   </li>
                 ))}
               </ul>
+            </div>
+
+            {/* Progress Steps Preview */}
+            <div className="bg-gradient-to-r from-gold/10 to-sunset-orange/10 rounded-xl p-4 border border-gold/20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-gold text-xs font-medium">8 Quick Sections</span>
+                <span className="text-gray-400 text-xs">~2 min each</span>
+              </div>
+              <div className="flex gap-1">
+                {[1,2,3,4,5,6,7,8].map(i => (
+                  <div 
+                    key={i} 
+                    className="h-1.5 flex-1 rounded-full bg-gold/30 hover:bg-gold transition-colors cursor-pointer"
+                    title={`Section ${i}`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -183,40 +198,37 @@ const LandingPage = () => {
 
       {/* Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent className="bg-white sm:max-w-md">
+        <DialogContent className="bg-white sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-heading text-2xl text-gray-900">Before You Begin</DialogTitle>
-            <DialogDescription className="text-gray-600">
-              Enter your email to save your progress. You can return anytime to complete the assessment.
+            <DialogTitle className="font-heading text-xl text-gray-900">Before You Begin</DialogTitle>
+            <DialogDescription className="text-gray-600 text-sm">
+              Enter your email to save progress and return anytime.
             </DialogDescription>
           </DialogHeader>
-          <div className="mt-4">
-            <Label htmlFor="email" className="text-gray-700 font-medium">Work Email Address</Label>
+          <div className="mt-3">
+            <Label htmlFor="email" className="text-gray-700 text-sm font-medium">Work Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="you@leadway.com"
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setEmailError("");
-              }}
-              className="mt-2 border-gray-300 focus:border-gold focus:ring-gold"
+              onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
+              className="mt-1.5 border-gray-300 focus:border-gold focus:ring-gold"
               data-testid="email-input"
+              onKeyDown={(e) => e.key === 'Enter' && handleEmailSubmit()}
             />
             {emailError && (
-              <p className="text-red-500 text-sm mt-1" data-testid="email-error">{emailError}</p>
+              <p className="text-red-500 text-xs mt-1" data-testid="email-error">{emailError}</p>
             )}
             <Button 
               onClick={handleEmailSubmit}
-              className="w-full mt-4 btn-gradient text-white font-semibold py-3"
+              className="w-full mt-3 btn-gradient text-white font-semibold py-2.5 hover:scale-[1.01] active:scale-[0.99] transition-transform"
               data-testid="continue-btn"
             >
-              Continue to Assessment
-              <ArrowRight className="ml-2 w-4 h-4" />
+              Continue <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
-            <p className="text-gray-500 text-xs text-center mt-3">
-              Your email is used only to save your progress and will not be shared.
+            <p className="text-gray-400 text-[10px] text-center mt-2">
+              Your email is only used to save progress.
             </p>
           </div>
         </DialogContent>

@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
-import { CheckCircle, Calendar, Users, ArrowRight, Home } from "lucide-react";
+import { CheckCircle, Calendar, Users, ArrowRight, Home, Sparkles } from "lucide-react";
 
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_ai-readiness-scan/artifacts/1nnj8el7_leadway_logo-removebg-preview.png";
 
@@ -11,99 +11,83 @@ const ThankYouPage = () => {
   return (
     <div className="min-h-screen bg-navy hero-pattern flex flex-col">
       {/* Header */}
-      <header className="glass bg-navy/85 border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-3">
-            <img src={LOGO_URL} alt="Leadway Logo" className="h-10 w-auto" />
-            <span className="text-white font-heading text-lg md:text-xl font-medium">Leadway Group</span>
-          </div>
+      <header className="glass bg-navy/90 border-b border-white/10">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-2">
+          <img src={LOGO_URL} alt="Leadway" className="h-8 w-auto" />
+          <span className="text-white font-heading text-base font-medium">Leadway Group</span>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <Card className="bg-white shadow-[0_8px_32px_rgba(0,0,0,0.15)] border-0 max-w-2xl w-full animate-fade-in">
-          <CardContent className="p-8 md:p-12 text-center">
+      <main className="flex-1 flex items-center justify-center px-4 py-8">
+        <Card className="bg-white shadow-xl border-0 max-w-lg w-full animate-fade-in">
+          <CardContent className="p-6 md:p-8 text-center">
             {/* Success Icon */}
-            <div className="w-20 h-20 bg-gradient-to-br from-sunset-orange to-gold rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-gold/20">
-              <CheckCircle className="w-10 h-10 text-white" />
+            <div className="w-16 h-16 bg-gradient-to-br from-sunset-orange to-gold rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-gold/30 animate-bounce">
+              <CheckCircle className="w-8 h-8 text-white" />
             </div>
 
-            {/* Title */}
-            <h1 className="font-heading text-3xl md:text-4xl font-medium text-gray-900 mb-4">
+            <h1 className="font-heading text-2xl md:text-3xl font-medium text-gray-900 mb-2">
               Assessment Complete!
             </h1>
             
-            <p className="text-gray-600 text-lg mb-8 max-w-md mx-auto">
-              Thank you for completing the AI Readiness & Opportunity Scan. 
-              Your responses will help us tailor the training experience for maximum impact.
+            <p className="text-gray-600 text-sm mb-6 max-w-sm mx-auto">
+              Thank you for completing the AI Readiness Scan. Your responses will help tailor the training experience.
             </p>
 
-            {/* Training Info Card */}
-            <div className="bg-navy rounded-xl p-6 mb-8 text-left">
-              <h2 className="text-gold font-heading text-xl font-medium mb-4">What's Next?</h2>
+            {/* Training Info */}
+            <div className="bg-navy rounded-xl p-4 mb-6 text-left">
+              <h2 className="text-gold font-heading text-base font-medium mb-3 flex items-center gap-2">
+                <Sparkles className="w-4 h-4" /> What's Next?
+              </h2>
               
-              <div className="space-y-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-gold/20 flex items-center justify-center flex-shrink-0">
-                    <Calendar className="w-5 h-5 text-gold" />
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-gold/20 flex items-center justify-center flex-shrink-0">
+                    <Calendar className="w-4 h-4 text-gold" />
                   </div>
                   <div>
-                    <h3 className="text-white font-medium">In-Person Training</h3>
-                    <p className="text-gray-400 text-sm">April 8-10, 2026</p>
-                    <p className="text-gray-500 text-sm mt-1">
-                      Join us for three days of hands-on AI learning and collaboration.
-                    </p>
+                    <h3 className="text-white font-medium text-sm">In-Person Training</h3>
+                    <p className="text-gray-400 text-xs">April 8-10, 2026</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-gold/20 flex items-center justify-center flex-shrink-0">
-                    <Users className="w-5 h-5 text-gold" />
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-gold/20 flex items-center justify-center flex-shrink-0">
+                    <Users className="w-4 h-4 text-gold" />
                   </div>
                   <div>
-                    <h3 className="text-white font-medium">Capstone Project</h3>
-                    <p className="text-gray-500 text-sm mt-1">
-                      Based on your responses, you'll work on a real AI implementation 
-                      project relevant to your role.
-                    </p>
+                    <h3 className="text-white font-medium text-sm">Capstone Project</h3>
+                    <p className="text-gray-400 text-xs">Work on a real AI implementation</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Key Reminders */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-8 text-left">
-              <h3 className="text-gray-900 font-medium mb-2">Before the Training</h3>
-              <ul className="text-gray-600 text-sm space-y-2">
-                <li className="flex items-start gap-2">
-                  <ArrowRight className="w-4 h-4 text-gold flex-shrink-0 mt-0.5" />
-                  <span>Watch for pre-training materials in your email</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <ArrowRight className="w-4 h-4 text-gold flex-shrink-0 mt-0.5" />
-                  <span>Think more about your capstone opportunity</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <ArrowRight className="w-4 h-4 text-gold flex-shrink-0 mt-0.5" />
-                  <span>Bring questions and challenges from your daily work</span>
-                </li>
+            {/* Reminders */}
+            <div className="bg-gray-50 rounded-lg p-3 mb-6 text-left">
+              <h3 className="text-gray-900 font-medium text-xs mb-2">Before the Training</h3>
+              <ul className="text-gray-600 text-xs space-y-1.5">
+                {["Watch for pre-training materials", "Refine your capstone idea", "Bring real challenges from work"].map((item, i) => (
+                  <li key={i} className="flex items-center gap-2 hover:text-gray-900 transition-colors">
+                    <ArrowRight className="w-3 h-3 text-gold" />
+                    <span>{item}</span>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            {/* CTA */}
             <Button
               onClick={() => navigate("/")}
               variant="outline"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 h-9 text-sm hover:scale-[1.02] active:scale-[0.98] transition-transform"
               data-testid="return-home-btn"
             >
-              <Home className="w-4 h-4 mr-2" />
-              Return to Home
+              <Home className="w-4 h-4 mr-2" /> Return Home
             </Button>
 
-            <p className="text-gray-400 text-sm mt-6">
-              Questions? Contact the training team at <span className="text-gold">training@leadway.com</span>
+            <p className="text-gray-400 text-[10px] mt-4">
+              Questions? <span className="text-gold">training@leadway.com</span>
             </p>
           </CardContent>
         </Card>
