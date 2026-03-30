@@ -645,6 +645,236 @@ async def get_organization_insights():
         "insights": insights
     }
 
+@api_router.get("/admin/report")
+async def get_comprehensive_report():
+    """Generate a comprehensive organization-wide AI readiness report"""
+    total = await db.submissions.count_documents({})
+    if total == 0:
+        return {"message": "No submissions yet", "report": None}
+    
+    submissions = await db.submissions.find({}, {"_id": 0}).to_list(1000)
+    
+    # Calculate overall statistics
+    avg_ai = sum(s.get('ai_readiness_score', 0) for s in submissions) / total
+    avg_opp = sum(s.get('opportunity_density_score', 0) for s in submissions) / total
+    avg_gov = sum(s.get('governance_sensitivity_score', 0) for s in submissions) / total
+    
+    # Band distribution
+    bands = {}
+    for s in submissions:
+        band = s.get('readiness_band', 'Unknown')
+        bands[band] = bands.get(band, 0) + 1
+    
+    # Subsidiary breakdown with average scores
+    subsidiary_stats = {}
+    for s in submissions:
+        sub = s.get('subsidiary', 'Unknown')
+        if sub not in subsidiary_stats:
+            subsidiary_stats[sub] = {'count': 0, 'ai_total': 0, 'opp_total': 0, 'gov_total': 0}
+        subsidiary_stats[sub]['count'] += 1
+        subsidiary_stats[sub]['ai_total'] += s.get('ai_readiness_score', 0)
+        subsidiary_stats[sub]['opp_total'] += s.get('opportunity_density_score', 0)
+        subsidiary_stats[sub]['gov_total'] += s.get('governance_sensitivity_score', 0)
+    
+    for sub in subsidiary_stats:
+        count = subsidiary_stats[sub]['count']
+        subsidiary_stats[sub]['avg_ai'] = round(subsidiary_stats[sub]['ai_total'] / count, 1)
+        subsidiary_stats[sub]['avg_opp'] = round(subsidiary_stats[sub]['opp_total'] / count, 1)
+        subsidiary_stats[sub]['avg_gov'] = round(subsidiary_stats[sub]['gov_total'] / count, 1)
+    
+    # Role level distribution
+    role_stats = {}
+    for s in submissions:
+        role = s.get('role_level', 'Unknown')
+        if role not in role_stats:
+            role_stats[role] = {'count': 0, 'avg_ai': 0}
+        role_stats[role]['count'] += 1
+        role_stats[role]['avg_ai'] += s.get('ai_readiness_score', 0)
+    for role in role_stats:
+        role_stats[role]['avg_ai'] = round(role_stats[role]['avg_ai'] / role_stats[role]['count'], 1)
+    
+    # Aggregate pain points with frequency
+    pain_points = {}
+    for s in submissions:
+        for pp in s.get('workflow_pain_points', []):
+            pain_points[pp] = pain_points.get(pp, 0) + 1
+    top_pain_points = sorted(pain_points.items(), key=lambda x: x[1], reverse=True)[:10]
+    
+    # Aggregate benefit areas
+    benefit_areas = {}
+    for s in submissions:
+        for ba in s.get('areas_benefit_ai', []):
+            benefit_areas[ba] = benefit_areas.get(ba, 0) + 1
+    top_benefit_areas = sorted(benefit_areas.items(), key=lambda x: x[1], reverse=True)[:10]
+    
+    # Aggregate governance concerns
+    gov_concerns = {}
+    for s in submissions:
+        for gc in s.get('governance_concerns', []):
+            gov_concerns[gc] = gov_concerns.get(gc, 0) + 1
+    top_gov_concerns = sorted(gov_concerns.items(), key=lambda x: x[1], reverse=True)[:8]
+    
+    # Learning expectations
+    learning_exp = {}
+    for s in submissions:
+        for le in s.get('learning_expectations', []):
+            learning_exp[le] = learning_exp.get(le, 0) + 1
+    top_learning = sorted(learning_exp.items(), key=lambda x: x[1], reverse=True)
+    
+    # AI tools usage
+    tools_usage = {}
+    for s in submissions:
+        for tool in s.get('ai_tools_used', []):
+            tools_usage[tool] = tools_usage.get(tool, 0) + 1
+    top_tools = sorted(tools_usage.items(), key=lambda x: x[1], reverse=True)
+    
+    # Usage frequency distribution
+    freq_dist = {}
+    for s in submissions:
+        freq = s.get('usage_frequency', 'Unknown')
+        freq_dist[freq] = freq_dist.get(freq, 0) + 1
+    
+    # Capstone themes analysis (extract key themes from capstone problems)
+    capstone_themes = []
+    for s in submissions:
+        capstone = s.get('capstone_problem', '')
+        if capstone:
+            capstone_themes.append({
+                'name': s.get('full_name', 'Unknown'),
+                'subsidiary': s.get('subsidiary', ''),
+                'department': s.get('department', ''),
+                'problem': capstone[:200] + ('...' if len(capstone) > 200 else ''),
+                'impact': s.get('capstone_impact', '')[:150]
+            })
+    
+    # Generate executive summary
+    exec_summary = []
+    
+    # Overall readiness assessment
+    if avg_ai >= 60:
+        exec_summary.append({
+            "type": "positive",
+            "title": "Strong AI Foundation",
+            "detail": f"The organization shows a solid AI readiness baseline with an average score of {avg_ai:.1f}/100. The team is well-positioned for intermediate to advanced training content."
+        })
+    elif avg_ai >= 40:
+        exec_summary.append({
+            "type": "neutral",
+            "title": "Moderate AI Readiness",
+            "detail": f"Average AI readiness of {avg_ai:.1f}/100 indicates mixed experience levels. Training should balance foundational concepts with practical applications."
+        })
+    else:
+        exec_summary.append({
+            "type": "warning",
+            "title": "Foundation Building Required",
+            "detail": f"Average AI readiness of {avg_ai:.1f}/100 suggests most participants need fundamental AI education before advanced topics."
+        })
+    
+    # Opportunity assessment
+    if avg_opp >= 50:
+        exec_summary.append({
+            "type": "positive",
+            "title": "High Opportunity Density",
+            "detail": f"Strong opportunity density score ({avg_opp:.1f}/100) indicates participants have identified numerous automation opportunities. Focus on prioritization and quick wins."
+        })
+    
+    # Governance assessment
+    if avg_gov >= 60:
+        exec_summary.append({
+            "type": "positive",
+            "title": "Strong Governance Awareness",
+            "detail": f"High governance sensitivity ({avg_gov:.1f}/100) shows mature understanding of AI risks. Organization is ready for responsible AI adoption."
+        })
+    elif avg_gov < 40:
+        exec_summary.append({
+            "type": "warning",
+            "title": "Governance Training Needed",
+            "detail": f"Governance sensitivity of {avg_gov:.1f}/100 indicates need for dedicated responsible AI and risk management content."
+        })
+    
+    # Champion identification
+    champions = bands.get('Champion Candidate', 0)
+    applied = bands.get('Applied User', 0)
+    if champions > 0 or applied > 0:
+        exec_summary.append({
+            "type": "positive",
+            "title": f"{champions + applied} Advanced AI Users Identified",
+            "detail": f"{champions} Champion Candidates and {applied} Applied Users can serve as peer mentors and AI ambassadors post-training."
+        })
+    
+    # Generate training recommendations
+    training_recs = []
+    
+    # Based on band distribution
+    beginners = bands.get('Beginner', 0) + bands.get('Explorer', 0)
+    if beginners > total * 0.5:
+        training_recs.append({
+            "priority": "High",
+            "area": "AI Fundamentals",
+            "recommendation": "Allocate significant time to AI basics, terminology, and foundational concepts.",
+            "rationale": f"{beginners} participants ({(beginners/total)*100:.0f}%) are at beginner/explorer level."
+        })
+    
+    # Based on top pain points
+    if top_pain_points:
+        top_pp = top_pain_points[0][0]
+        training_recs.append({
+            "priority": "High",
+            "area": "Practical Application",
+            "recommendation": f"Include hands-on exercises addressing '{top_pp}' - the most common pain point.",
+            "rationale": f"Reported by {top_pain_points[0][1]} participants ({(top_pain_points[0][1]/total)*100:.0f}%)."
+        })
+    
+    # Based on learning expectations
+    if top_learning:
+        training_recs.append({
+            "priority": "Medium",
+            "area": "Curriculum Focus",
+            "recommendation": f"Prioritize '{top_learning[0][0]}' in the training agenda.",
+            "rationale": f"Top learning expectation, selected by {top_learning[0][1]} participants."
+        })
+    
+    # Based on governance
+    if avg_gov < 50:
+        training_recs.append({
+            "priority": "High",
+            "area": "Responsible AI",
+            "recommendation": "Include dedicated module on AI ethics, data privacy, and governance frameworks.",
+            "rationale": f"Average governance awareness ({avg_gov:.1f}/100) needs strengthening."
+        })
+    
+    # Cross-subsidiary recommendation
+    if len(subsidiary_stats) >= 3:
+        training_recs.append({
+            "priority": "Medium",
+            "area": "Collaboration",
+            "recommendation": "Create mixed subsidiary groups for collaborative exercises to foster cross-organizational learning.",
+            "rationale": f"{len(subsidiary_stats)} subsidiaries represented - opportunity for knowledge sharing."
+        })
+    
+    return {
+        "report_generated_at": datetime.now(timezone.utc).isoformat(),
+        "total_submissions": total,
+        "executive_summary": exec_summary,
+        "overall_scores": {
+            "ai_readiness": round(avg_ai, 1),
+            "opportunity_density": round(avg_opp, 1),
+            "governance_sensitivity": round(avg_gov, 1)
+        },
+        "readiness_distribution": bands,
+        "subsidiary_breakdown": subsidiary_stats,
+        "role_level_breakdown": role_stats,
+        "usage_frequency_distribution": freq_dist,
+        "top_pain_points": [{"name": pp[0], "count": pp[1], "percentage": round(pp[1]/total*100, 1)} for pp in top_pain_points],
+        "top_benefit_areas": [{"name": ba[0], "count": ba[1], "percentage": round(ba[1]/total*100, 1)} for ba in top_benefit_areas],
+        "top_governance_concerns": [{"name": gc[0], "count": gc[1], "percentage": round(gc[1]/total*100, 1)} for gc in top_gov_concerns],
+        "learning_expectations": [{"name": le[0], "count": le[1], "percentage": round(le[1]/total*100, 1)} for le in top_learning],
+        "ai_tools_adoption": [{"name": t[0], "count": t[1], "percentage": round(t[1]/total*100, 1)} for t in top_tools],
+        "capstone_projects": capstone_themes,
+        "training_recommendations": training_recs
+    }
+
+
 @api_router.get("/admin/export")
 async def export_csv():
     submissions = await db.submissions.find({}, {"_id": 0}).to_list(10000)

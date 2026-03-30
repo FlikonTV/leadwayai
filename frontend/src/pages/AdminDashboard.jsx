@@ -11,8 +11,8 @@ import { Badge } from "../components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
-import { Users, Download, LogOut, Search, Filter, Eye, ChevronLeft, ChevronRight, TrendingUp, Shield, Lightbulb, RefreshCw, Loader2, AlertTriangle, CheckCircle, Info, Target, BookOpen, Zap } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Users, Download, LogOut, Search, Filter, Eye, ChevronLeft, ChevronRight, TrendingUp, Shield, Lightbulb, RefreshCw, Loader2, AlertTriangle, CheckCircle, Info, Target, BookOpen, Zap, FileText, Building, UserCheck, Clock } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_ai-readiness-scan/artifacts/1nnj8el7_leadway_logo-removebg-preview.png";
@@ -24,7 +24,7 @@ const BAND_COLORS = { "Beginner": "#EF4444", "Explorer": "#F59E0B", "Emerging Pr
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
-  const [insights, setInsights] = useState(null);
+  const [report, setReport] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [totalSubmissions, setTotalSubmissions] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,15 +46,15 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [statsRes, submissionsRes, insightsRes] = await Promise.all([
+      const [statsRes, submissionsRes, reportRes] = await Promise.all([
         axios.get(`${API}/admin/stats`),
         axios.get(`${API}/submissions`, { params: { limit: pageSize, skip: 0 } }),
-        axios.get(`${API}/admin/insights`)
+        axios.get(`${API}/admin/report`)
       ]);
       setStats(statsRes.data);
       setSubmissions(submissionsRes.data.submissions);
       setTotalSubmissions(submissionsRes.data.total);
-      setInsights(insightsRes.data);
+      setReport(reportRes.data);
     } catch (error) {
       toast.error("Failed to load data");
     } finally {
@@ -111,11 +111,11 @@ const AdminDashboard = () => {
     return styles[band] || "bg-gray-100 text-gray-700";
   };
 
-  const getInsightIcon = (type) => {
+  const getSummaryIcon = (type) => {
     switch(type) {
-      case 'warning': return <AlertTriangle className="w-4 h-4 text-amber-500" />;
-      case 'positive': return <CheckCircle className="w-4 h-4 text-green-500" />;
-      default: return <Info className="w-4 h-4 text-blue-500" />;
+      case 'warning': return <AlertTriangle className="w-5 h-5 text-amber-500" />;
+      case 'positive': return <CheckCircle className="w-5 h-5 text-green-500" />;
+      default: return <Info className="w-5 h-5 text-blue-500" />;
     }
   };
 
@@ -170,7 +170,7 @@ const AdminDashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="bg-white shadow-sm">
             <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
-            <TabsTrigger value="insights" className="text-xs">Insights</TabsTrigger>
+            <TabsTrigger value="report" className="text-xs">Full Report</TabsTrigger>
             <TabsTrigger value="analysis" className="text-xs">Analysis</TabsTrigger>
             <TabsTrigger value="submissions" className="text-xs">Submissions</TabsTrigger>
           </TabsList>
@@ -227,39 +227,143 @@ const AdminDashboard = () => {
             </div>
           </TabsContent>
 
-          {/* Insights Tab */}
-          <TabsContent value="insights" className="space-y-4">
-            {insights?.insights?.length > 0 ? (
-              <div className="grid gap-3">
-                {insights.insights.map((insight, i) => (
-                  <Card key={i} className={`bg-white border-0 shadow-sm border-l-4 ${
-                    insight.type === 'warning' ? 'border-l-amber-500' : 
-                    insight.type === 'positive' ? 'border-l-green-500' : 'border-l-blue-500'
-                  }`}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        {getInsightIcon(insight.type)}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline" className="text-[10px]">{insight.category}</Badge>
-                            <h3 className="font-medium text-gray-900 text-sm">{insight.title}</h3>
-                          </div>
-                          <p className="text-gray-600 text-xs mb-2">{insight.description}</p>
-                          <div className="flex items-start gap-2 bg-gray-50 rounded p-2">
-                            <Target className="w-3 h-3 text-gold mt-0.5" />
-                            <p className="text-gray-700 text-xs"><span className="font-medium">Recommendation:</span> {insight.recommendation}</p>
+          {/* Full Report Tab */}
+          <TabsContent value="report" className="space-y-4">
+            {report && report.total_submissions > 0 ? (
+              <div className="space-y-4">
+                {/* Executive Summary */}
+                <Card className="bg-white border-0 shadow-sm">
+                  <CardHeader className="py-3 px-4 border-b border-gray-100">
+                    <CardTitle className="font-heading text-lg text-gray-900 flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-gold" /> Executive Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="grid gap-3">
+                      {report.executive_summary?.map((item, i) => (
+                        <div key={i} className={`flex items-start gap-3 p-3 rounded-lg ${
+                          item.type === 'positive' ? 'bg-green-50' : 
+                          item.type === 'warning' ? 'bg-amber-50' : 'bg-blue-50'
+                        }`}>
+                          {getSummaryIcon(item.type)}
+                          <div>
+                            <h4 className="font-medium text-gray-900 text-sm">{item.title}</h4>
+                            <p className="text-gray-600 text-xs mt-1">{item.detail}</p>
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Overall Scores */}
+                <div className="grid grid-cols-3 gap-3">
+                  <ScoreCard title="AI Readiness" score={report.overall_scores?.ai_readiness} color="blue" icon={TrendingUp} />
+                  <ScoreCard title="Opportunity Density" score={report.overall_scores?.opportunity_density} color="green" icon={Lightbulb} />
+                  <ScoreCard title="Governance Sensitivity" score={report.overall_scores?.governance_sensitivity} color="amber" icon={Shield} />
+                </div>
+
+                {/* Training Recommendations */}
+                <Card className="bg-white border-0 shadow-sm">
+                  <CardHeader className="py-3 px-4 border-b border-gray-100">
+                    <CardTitle className="font-heading text-base text-gray-900 flex items-center gap-2">
+                      <Target className="w-4 h-4 text-purple-500" /> Training Recommendations
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      {report.training_recommendations?.map((rec, i) => (
+                        <div key={i} className="border border-gray-200 rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge className={`text-[10px] ${rec.priority === 'High' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                              {rec.priority}
+                            </Badge>
+                            <span className="font-medium text-gray-900 text-sm">{rec.area}</span>
+                          </div>
+                          <p className="text-gray-700 text-xs">{rec.recommendation}</p>
+                          <p className="text-gray-500 text-[10px] mt-1 italic">{rec.rationale}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Subsidiary Breakdown */}
+                <Card className="bg-white border-0 shadow-sm">
+                  <CardHeader className="py-3 px-4 border-b border-gray-100">
+                    <CardTitle className="font-heading text-base text-gray-900 flex items-center gap-2">
+                      <Building className="w-4 h-4 text-navy" /> Subsidiary Performance
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50">
+                          <TableHead className="text-xs">Subsidiary</TableHead>
+                          <TableHead className="text-xs text-center">Participants</TableHead>
+                          <TableHead className="text-xs text-center">Avg AI</TableHead>
+                          <TableHead className="text-xs text-center">Avg Opp</TableHead>
+                          <TableHead className="text-xs text-center">Avg Gov</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {Object.entries(report.subsidiary_breakdown || {}).map(([name, data]) => (
+                          <TableRow key={name}>
+                            <TableCell className="text-xs font-medium">{name}</TableCell>
+                            <TableCell className="text-xs text-center">{data.count}</TableCell>
+                            <TableCell className="text-xs text-center text-blue-600 font-medium">{data.avg_ai}</TableCell>
+                            <TableCell className="text-xs text-center text-green-600 font-medium">{data.avg_opp}</TableCell>
+                            <TableCell className="text-xs text-center text-amber-600 font-medium">{data.avg_gov}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+
+                {/* Capstone Projects */}
+                {report.capstone_projects?.length > 0 && (
+                  <Card className="bg-white border-0 shadow-sm">
+                    <CardHeader className="py-3 px-4 border-b border-gray-100">
+                      <CardTitle className="font-heading text-base text-gray-900 flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-gold" /> Capstone Project Ideas
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        {report.capstone_projects.map((project, i) => (
+                          <div key={i} className="border border-gray-200 rounded-lg p-3 hover:border-gold/50 transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium text-gray-900 text-sm">{project.name}</span>
+                              <Badge variant="outline" className="text-[10px]">{project.subsidiary?.replace("Leadway ", "")}</Badge>
+                            </div>
+                            <p className="text-gray-700 text-xs">{project.problem}</p>
+                            {project.impact && (
+                              <p className="text-gray-500 text-[10px] mt-2">
+                                <span className="font-medium">Expected Impact:</span> {project.impact}
+                              </p>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                )}
+
+                {/* Key Findings Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <FindingsCard title="Top Pain Points" icon={Zap} color="amber" items={report.top_pain_points} />
+                  <FindingsCard title="Top Benefit Areas" icon={Lightbulb} color="green" items={report.top_benefit_areas} />
+                  <FindingsCard title="Learning Expectations" icon={BookOpen} color="purple" items={report.learning_expectations} />
+                  <FindingsCard title="AI Tools Adoption" icon={TrendingUp} color="blue" items={report.ai_tools_adoption} />
+                </div>
               </div>
             ) : (
               <Card className="bg-white border-0 shadow-sm">
-                <CardContent className="p-8 text-center">
-                  <Info className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">No insights available yet. Insights will appear once submissions are received.</p>
+                <CardContent className="p-12 text-center">
+                  <FileText className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                  <h3 className="text-gray-900 font-medium mb-2">No Report Available</h3>
+                  <p className="text-gray-500 text-sm">The comprehensive report will be generated once submissions are received.</p>
                 </CardContent>
               </Card>
             )}
@@ -268,117 +372,10 @@ const AdminDashboard = () => {
           {/* Analysis Tab */}
           <TabsContent value="analysis" className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              {/* Top Pain Points */}
-              <Card className="bg-white border-0 shadow-sm">
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="font-heading text-base text-gray-900 flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-amber-500" /> Top Pain Points
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-3">
-                  {painPointsData.length > 0 ? (
-                    <div className="space-y-2">
-                      {painPointsData.slice(0, 5).map((item, i) => (
-                        <div key={i} className="flex items-center justify-between">
-                          <span className="text-xs text-gray-700 truncate flex-1">{item.name}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-amber-500 rounded-full" style={{ width: `${(item.count / (painPointsData[0]?.count || 1)) * 100}%` }} />
-                            </div>
-                            <span className="text-xs font-medium text-gray-500 w-6 text-right">{item.count}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-400 text-xs text-center py-4">No data yet</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Top Benefit Areas */}
-              <Card className="bg-white border-0 shadow-sm">
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="font-heading text-base text-gray-900 flex items-center gap-2">
-                    <Lightbulb className="w-4 h-4 text-green-500" /> Top AI Benefit Areas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-3">
-                  {benefitAreasData.length > 0 ? (
-                    <div className="space-y-2">
-                      {benefitAreasData.slice(0, 5).map((item, i) => (
-                        <div key={i} className="flex items-center justify-between">
-                          <span className="text-xs text-gray-700 truncate flex-1">{item.name}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-green-500 rounded-full" style={{ width: `${(item.count / (benefitAreasData[0]?.count || 1)) * 100}%` }} />
-                            </div>
-                            <span className="text-xs font-medium text-gray-500 w-6 text-right">{item.count}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-400 text-xs text-center py-4">No data yet</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* AI Tools Usage */}
-              <Card className="bg-white border-0 shadow-sm">
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="font-heading text-base text-gray-900 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-blue-500" /> AI Tools Usage
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-3">
-                  {toolsData.length > 0 ? (
-                    <div className="space-y-2">
-                      {toolsData.slice(0, 5).map((item, i) => (
-                        <div key={i} className="flex items-center justify-between">
-                          <span className="text-xs text-gray-700 truncate flex-1">{item.name}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(item.count / (toolsData[0]?.count || 1)) * 100}%` }} />
-                            </div>
-                            <span className="text-xs font-medium text-gray-500 w-6 text-right">{item.count}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-400 text-xs text-center py-4">No data yet</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Learning Expectations */}
-              <Card className="bg-white border-0 shadow-sm">
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="font-heading text-base text-gray-900 flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-purple-500" /> Learning Expectations
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-3">
-                  {stats?.learning_expectations?.length > 0 ? (
-                    <div className="space-y-2">
-                      {stats.learning_expectations.slice(0, 5).map((item, i) => (
-                        <div key={i} className="flex items-center justify-between">
-                          <span className="text-xs text-gray-700 truncate flex-1">{item.name}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-purple-500 rounded-full" style={{ width: `${(item.count / (stats.learning_expectations[0]?.count || 1)) * 100}%` }} />
-                            </div>
-                            <span className="text-xs font-medium text-gray-500 w-6 text-right">{item.count}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-400 text-xs text-center py-4">No data yet</p>
-                  )}
-                </CardContent>
-              </Card>
+              <AnalysisCard title="Top Pain Points" icon={Zap} color="amber" data={painPointsData} />
+              <AnalysisCard title="Top AI Benefit Areas" icon={Lightbulb} color="green" data={benefitAreasData} />
+              <AnalysisCard title="AI Tools Usage" icon={TrendingUp} color="blue" data={toolsData} />
+              <AnalysisCard title="Learning Expectations" icon={BookOpen} color="purple" data={stats?.learning_expectations || []} />
             </div>
           </TabsContent>
 
@@ -492,7 +489,6 @@ const AdminDashboard = () => {
           {selectedSubmission && (
             <ScrollArea className="max-h-[65vh] pr-4">
               <div className="space-y-4">
-                {/* Scores */}
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-blue-50 rounded-lg p-3 text-center">
                     <p className="text-blue-600 text-[10px] font-medium">AI Readiness</p>
@@ -512,7 +508,6 @@ const AdminDashboard = () => {
                   <Badge className={`${getBandBadge(selectedSubmission.readiness_band)} text-xs px-3 py-1`}>{selectedSubmission.readiness_band}</Badge>
                 </div>
 
-                {/* Score Breakdowns */}
                 {selectedSubmission.ai_readiness_breakdown && (
                   <DetailSection title="AI Readiness Breakdown" items={
                     Object.entries(selectedSubmission.ai_readiness_breakdown).map(([k, v]) => ({
@@ -522,7 +517,6 @@ const AdminDashboard = () => {
                   } />
                 )}
 
-                {/* Insights */}
                 {selectedSubmission.insights?.length > 0 && (
                   <div className="border border-gray-200 rounded-lg overflow-hidden">
                     <div className="bg-blue-50 px-3 py-1.5 border-b border-gray-200">
@@ -543,7 +537,6 @@ const AdminDashboard = () => {
                   </div>
                 )}
 
-                {/* Recommendations */}
                 {selectedSubmission.recommendations?.length > 0 && (
                   <div className="border border-gray-200 rounded-lg overflow-hidden">
                     <div className="bg-green-50 px-3 py-1.5 border-b border-gray-200">
@@ -564,12 +557,11 @@ const AdminDashboard = () => {
                   </div>
                 )}
 
-                {/* Training Focus Areas */}
                 {selectedSubmission.training_focus_areas?.length > 0 && (
                   <div className="border border-gray-200 rounded-lg overflow-hidden">
                     <div className="bg-purple-50 px-3 py-1.5 border-b border-gray-200">
                       <h3 className="font-medium text-purple-900 text-xs flex items-center gap-1">
-                        <BookOpen className="w-3 h-3" /> Recommended Focus Areas
+                        <BookOpen className="w-3 h-3" /> Focus Areas
                       </h3>
                     </div>
                     <div className="p-3 flex flex-wrap gap-1.5">
@@ -580,7 +572,6 @@ const AdminDashboard = () => {
                   </div>
                 )}
 
-                {/* Profile Details */}
                 <DetailSection title="Profile" items={[
                   { l: "Job Title", v: selectedSubmission.job_title },
                   { l: "Department", v: selectedSubmission.department },
@@ -588,7 +579,6 @@ const AdminDashboard = () => {
                   { l: "Role Level", v: selectedSubmission.role_level }
                 ]} />
 
-                {/* Capstone */}
                 <DetailSection title="Capstone Opportunity" items={[
                   { l: "Problem", v: selectedSubmission.capstone_problem },
                   { l: "Success Definition", v: selectedSubmission.success_definition },
@@ -604,7 +594,7 @@ const AdminDashboard = () => {
 };
 
 const StatCard = ({ icon: Icon, label, value, color, iconColor }) => (
-  <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-default">
+  <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
     <CardContent className="p-3 flex items-center gap-3">
       <div className={`w-10 h-10 rounded-lg ${color} flex items-center justify-center`}>
         <Icon className={`w-5 h-5 ${iconColor}`} />
@@ -613,6 +603,72 @@ const StatCard = ({ icon: Icon, label, value, color, iconColor }) => (
         <p className="text-gray-500 text-[10px] uppercase tracking-wider">{label}</p>
         <p className="text-xl font-bold text-gray-900">{value}</p>
       </div>
+    </CardContent>
+  </Card>
+);
+
+const ScoreCard = ({ title, score, color, icon: Icon }) => (
+  <Card className="bg-white border-0 shadow-sm">
+    <CardContent className="p-4 text-center">
+      <div className={`w-10 h-10 rounded-full bg-${color}-100 flex items-center justify-center mx-auto mb-2`}>
+        <Icon className={`w-5 h-5 text-${color}-600`} />
+      </div>
+      <p className="text-gray-500 text-xs mb-1">{title}</p>
+      <p className={`text-3xl font-bold text-${color}-600`}>{score || 0}</p>
+      <p className="text-gray-400 text-[10px]">out of 100</p>
+    </CardContent>
+  </Card>
+);
+
+const AnalysisCard = ({ title, icon: Icon, color, data }) => (
+  <Card className="bg-white border-0 shadow-sm">
+    <CardHeader className="py-3 px-4">
+      <CardTitle className="font-heading text-base text-gray-900 flex items-center gap-2">
+        <Icon className={`w-4 h-4 text-${color}-500`} /> {title}
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="p-3">
+      {data?.length > 0 ? (
+        <div className="space-y-2">
+          {data.slice(0, 5).map((item, i) => (
+            <div key={i} className="flex items-center justify-between">
+              <span className="text-xs text-gray-700 truncate flex-1">{item.name}</span>
+              <div className="flex items-center gap-2">
+                <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className={`h-full bg-${color}-500 rounded-full`} style={{ width: `${(item.count / (data[0]?.count || 1)) * 100}%` }} />
+                </div>
+                <span className="text-xs font-medium text-gray-500 w-6 text-right">{item.count}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-gray-400 text-xs text-center py-4">No data yet</p>
+      )}
+    </CardContent>
+  </Card>
+);
+
+const FindingsCard = ({ title, icon: Icon, color, items }) => (
+  <Card className="bg-white border-0 shadow-sm">
+    <CardHeader className="py-2 px-3 border-b border-gray-100">
+      <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
+        <Icon className={`w-4 h-4 text-${color}-500`} /> {title}
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="p-3">
+      {items?.length > 0 ? (
+        <div className="space-y-1.5">
+          {items.slice(0, 5).map((item, i) => (
+            <div key={i} className="flex items-center justify-between text-xs">
+              <span className="text-gray-700 truncate flex-1">{item.name}</span>
+              <Badge variant="outline" className="text-[10px] ml-2">{item.percentage}%</Badge>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-gray-400 text-xs text-center py-2">No data</p>
+      )}
     </CardContent>
   </Card>
 );
