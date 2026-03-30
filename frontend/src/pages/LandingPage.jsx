@@ -60,8 +60,8 @@ const LandingPage = () => {
 
   const CountdownUnit = ({ value, label }) => (
     <div className="countdown-box rounded-lg px-4 py-3 md:px-6 md:py-4 text-center">
-      <div className="text-2xl md:text-4xl font-bold text-gold font-heading">{value.toString().padStart(2, '0')}</div>
-      <div className="text-xs md:text-sm text-gray-400 uppercase tracking-wider mt-1">{label}</div>
+      <div className="text-2xl md:text-4xl font-bold text-white font-heading">{value.toString().padStart(2, '0')}</div>
+      <div className="text-xs md:text-sm text-gray-300 uppercase tracking-wider mt-1">{label}</div>
     </div>
   );
 
@@ -150,7 +150,7 @@ const LandingPage = () => {
               <h2 className="text-white font-heading text-xl md:text-2xl font-medium mb-2 text-center">
                 Training Begins In
               </h2>
-              <p className="text-gray-400 text-sm text-center mb-6">April 8-10, 2026 | In-Person Event</p>
+              <p className="text-gray-300 text-sm text-center mb-6">April 8-10, 2026 | In-Person Event</p>
               
               <div className="grid grid-cols-4 gap-2 md:gap-4" data-testid="countdown-timer">
                 <CountdownUnit value={countdown.days} label="Days" />
