@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "sonner";
@@ -143,9 +143,10 @@ const AssessmentForm = () => {
   });
 
   const email = localStorage.getItem("leadway_email") || "";
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
-    if (!email) {
+    if (!email && !isSubmittingRef.current) {
       navigate("/");
       return;
     }
@@ -272,11 +273,13 @@ const AssessmentForm = () => {
 
   const handleSubmit = async () => {
     setIsSaving(true);
+    isSubmittingRef.current = true;
     try {
       await axios.post(`${API}/submissions`, formData);
       localStorage.removeItem("leadway_email");
-      navigate("/thank-you");
+      navigate("/thank-you", { replace: true });
     } catch (error) {
+      isSubmittingRef.current = false;
       console.error("Error submitting:", error);
       toast.error("Failed to submit assessment. Please try again.");
     } finally {
