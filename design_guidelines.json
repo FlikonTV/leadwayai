@@ -1,0 +1,121 @@
+{
+  "theme": "dark/light hybrid",
+  "archetype": "Archetype 5 (Jewel & Luxury) with Swiss Contrast",
+  "brand_identity": {
+    "vibe": "Executive, strategic, high-value, trustworthy",
+    "domain": "Premium Financial Services / Corporate Executive Assessment"
+  },
+  "colors": {
+    "background": {
+      "app_shell": "#0B1320", 
+      "surface_card": "#FFFFFF",
+      "surface_hover": "#F9FAFB",
+      "header_glass": "rgba(11, 19, 32, 0.85)"
+    },
+    "primary": {
+      "gold": "#D4AF37",
+      "sunset_orange": "#E87A00",
+      "gradient": "bg-gradient-to-r from-[#E87A00] to-[#D4AF37]"
+    },
+    "text": {
+      "on_dark": "#F3F4F6",
+      "on_dark_muted": "#9CA3AF",
+      "on_light": "#111827",
+      "on_light_muted": "#4B5563"
+    },
+    "border": {
+      "light": "#E5E7EB",
+      "dark_subtle": "#1E293B"
+    }
+  },
+  "typography": {
+    "fonts": {
+      "heading": "'Cormorant Garamond', serif",
+      "body": "'Manrope', sans-serif"
+    },
+    "rules": {
+      "h1": "text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight leading-none text-white",
+      "h2": "text-2xl md:text-3xl lg:text-4xl font-medium tracking-tight text-gray-900",
+      "h3": "text-xl font-medium text-gray-900",
+      "body": "text-base leading-relaxed text-gray-600",
+      "labels": "text-xs md:text-sm font-semibold uppercase tracking-[0.15em] text-gray-500",
+      "anti_pattern_avoidance": "Do not use 'Inter' for headings. Never center-align long form content."
+    },
+    "imports": [
+      "@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Manrope:wght@400;500;600;700&display=swap');"
+    ]
+  },
+  "spacing_and_layout": {
+    "philosophy": "Generous Spacing Philosophy (p-8 to p-16) for an uncluttered, executive feel.",
+    "container_padding": "p-6 md:p-12 lg:p-16",
+    "card_padding": "p-8 md:p-10",
+    "gap": {
+      "small": "gap-4",
+      "medium": "gap-8",
+      "large": "gap-12"
+    },
+    "grids": {
+      "form_layout": "Max-width of 3xl, centered but left-aligned text within.",
+      "dashboard_mode": "Control Room Grid: grid-cols-1 md:grid-cols-3 lg:grid-cols-4. Gap-6. Every pixel utilized, h-full on children."
+    }
+  },
+  "components": {
+    "header": "Sticky top-0 z-50 backdrop-blur-xl bg-[#0B1320]/85 border-b border-white/10. Logo on left, user context on right.",
+    "form_card": "Pure white (#FFFFFF) container with rounded-lg. Ambient shadow: shadow-[0_8px_32px_rgba(0,0,0,0.12)]. 1px border: border-gray-100.",
+    "buttons": {
+      "primary": "bg-gradient-to-r from-[#E87A00] to-[#D4AF37] text-white font-semibold rounded-md px-6 py-3 hover:opacity-90 transition-opacity",
+      "secondary": "bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-md px-6 py-3 transition-colors",
+      "outline_inverse": "border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#0B1320] transition-colors"
+    },
+    "inputs": "Shadcn based. Use bottom-border only (material style) or standard subtle borders. Focus state MUST be ring-1 ring-[#D4AF37].",
+    "progress_bar": "Fixed to top of the white form card. 2px height. Filled section uses primary gradient.",
+    "toast_notifications": "Use Sonner for autosave drafts ('Draft saved at X:XX'). Position: bottom-right."
+  },
+  "interactions_and_motion": {
+    "hover_states": "Buttons translate-y-[-1px]. Cards translate-y-[-2px] with increased shadow. Always use transitions (duration-200).",
+    "focus_states": "High contrast ring for accessibility. focus:ring-2 focus:ring-[#D4AF37] focus:outline-none focus:ring-offset-2 focus:ring-offset-white.",
+    "page_transitions": "Fade in for multi-step form transitions."
+  },
+  "media": {
+    "hero_background": {
+      "url": "https://images.unsplash.com/photo-1764083292882-fd28776d0022?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHwxfHxkYXJrJTIwbmF2eSUyMGdsYXNzJTIwYXJjaGl0ZWN0dXJlfGVufDB8fHx8MTc3NDg4ODI0MXww&ixlib=rb-4.1.0&q=85",
+      "description": "Modern dark navy glass skyscraper. Used as the landing page right-side visual or background with heavy opacity overlay (bg-[#0B1320]/80)."
+    },
+    "logo_placeholder": {
+      "url": "https://images.pexels.com/photos/33429147/pexels-photo-33429147.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "description": "Leadway camel silhouette sunset logo. To be clipped circular and placed in header."
+    }
+  },
+  "pages": {
+    "landing": {
+      "layout": "Navy background split screen. Left: H1 Title (Cormorant), Subtitle (Manrope), Confidentiality note, Countdown Timer (Large Display), 'Start Assessment' button. Right: Abstract navy glass architecture image.",
+      "countdown_timer": "Show days, hours, minutes until April 8, 2026. Gold accent text."
+    },
+    "multi_step_form": {
+      "layout": "Navy background. Centered white card (max-w-3xl) containing the form. 8 sections with clear progress bar.",
+      "features": "Autosave drafts, validations, multi-selects, rating scales."
+    },
+    "review_submit": {
+      "layout": "Accordion style or clean list summarizing all answers. Final 'Submit Assessment' CTA."
+    },
+    "thank_you": {
+      "layout": "Centered success message on white card. Next steps for the April 8-10 training."
+    },
+    "admin_dashboard": {
+      "layout": "Dashboard grid layout on a light gray or white background for maximum readability of charts, or keep navy shell with white widget cards.",
+      "features": "Shadcn/Recharts for scoring (AI Readiness, Opportunity Density, Governance Sensitivity), Data tables for submissions, CSV Export."
+    }
+  },
+  "testing_and_accessibility": {
+    "data_testid_requirement": "All interactive elements (buttons, inputs, tabs, checkboxes) MUST include 'data-testid' attributes (e.g., data-testid='start-assessment-button').",
+    "contrast": "Ensure white text on navy and dark text on white."
+  },
+  "instructions_to_main_agent": [
+    "Strictly follow the color palette: Deep Navy base (#0B1320), White cards (#FFFFFF), Gold accents (#D4AF37).",
+    "Apply fonts globally: 'Cormorant Garamond' for all headings (H1-H3), 'Manrope' for body, inputs, and labels.",
+    "Use standard HTML/Tailwind for the landing page layout to ensure creative freedom, but use Shadcn for the Form inputs, Dashboards, and UI widgets.",
+    "Implement a smooth multi-step form experience. You can mock the autosave API, but show the UX state (e.g., 'Draft saved' toast).",
+    "Include a functional countdown timer to April 8, 2026 on the landing page.",
+    "Dashboard should visually distinct from the form. Use Recharts for the scoring visualizations."
+  ]
+}
