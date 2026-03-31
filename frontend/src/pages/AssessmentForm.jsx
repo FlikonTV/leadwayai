@@ -59,6 +59,7 @@ const AssessmentForm = () => {
     if (!email && !isSubmittingRef.current) { navigate("/"); return; }
     setFormData(prev => ({ ...prev, email }));
     loadDraft();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [email, navigate]);
 
   const loadDraft = async () => {

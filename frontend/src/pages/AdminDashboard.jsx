@@ -39,8 +39,10 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (!sessionStorage.getItem("leadway_admin")) { navigate("/admin"); return; }
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchSubmissions(); }, [subsidiaryFilter, bandFilter, currentPage]);
 
   const fetchData = async () => {
