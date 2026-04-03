@@ -48,7 +48,7 @@ const ThankYouPage = () => {
                   </div>
                   <div>
                     <h3 className="text-white font-medium text-sm">In-Person Training</h3>
-                    <p className="text-gray-400 text-xs">April 8-10, 2026</p>
+                    <p className="text-gray-400 text-xs">April 13-15, 2026</p>
                   </div>
                 </div>
 

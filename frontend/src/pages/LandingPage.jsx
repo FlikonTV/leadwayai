@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Clock, Shield, Calendar, ArrowRight, CheckCircle, Sparkles, Zap } from "lucide-react";
 
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_ai-readiness-scan/artifacts/1nnj8el7_leadway_logo-removebg-preview.png";
-const TRAINING_DATE = new Date("2026-04-08T09:00:00");
+const TRAINING_DATE = new Date("2026-04-13T09:00:00");
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -100,7 +100,7 @@ const LandingPage = () => {
           <div className="lg:col-span-3 animate-fade-in">
             <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/30 rounded-full px-3 py-1.5 mb-4 hover:bg-gold/20 transition-colors cursor-default">
               <Calendar className="w-3.5 h-3.5 text-gold" />
-              <span className="text-gold text-xs font-medium">April 8-10, 2026</span>
+              <span className="text-gold text-xs font-medium">April 13-15, 2026</span>
             </div>
             
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-heading font-medium text-white leading-tight mb-4">
@@ -146,7 +146,7 @@ const LandingPage = () => {
               <h2 className="text-white font-heading text-lg font-medium mb-1 text-center">
                 Training Begins In
               </h2>
-              <p className="text-gray-300 text-xs text-center mb-4">April 8-10, 2026</p>
+              <p className="text-gray-300 text-xs text-center mb-4">April 13-15, 2026</p>
               
               <div className="grid grid-cols-4 gap-2" data-testid="countdown-timer">
                 <CountdownUnit value={countdown.days} label="Days" />
