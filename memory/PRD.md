@@ -49,6 +49,15 @@ Build a clean, premium, mobile-friendly internal web app called "Leadway AI Read
 - S7: Programme Evaluation (session ratings, 2 facilitator cards navy/teal, NPS 0-10, open feedback)
 - S8: Goals Revisited (achieved checkboxes, follow-up interest, final words)
 - Custom thank you: "The Testimony Is Forming." with quote block
+
+### 7. Post-Eval Admin Dashboard Tab (DONE - April 17, 2026)
+- New "Post-Eval" tab in admin dashboard with badge count
+- GET /api/admin/post-eval-stats aggregates: NPS (avg, net, distribution), readiness distribution, session ratings, facilitator ratings, tool comfort averages, deployment summary, goals achieved, one-thing status
+- Charts: NPS pie chart (promoters/passives/detractors), readiness bar chart
+- Three-column layout: session ratings, Dr. Celestine card (navy), Orimolade card (teal)
+- Tool comfort 2-column layout, goals achieved with progress bars, one-thing status
+- Submissions table with readiness badges, NPS scores, detail dialog on click
+- Detail dialog: profile, AI relationship, barriers removed, tool ratings, session ratings, NPS, goals, open feedback
 - Backend: POST/GET /api/post-evaluations, POST/GET /api/post-eval-drafts
 
 ### 5. Thank You Pages (DONE)
@@ -72,5 +81,4 @@ Build a clean, premium, mobile-friendly internal web app called "Leadway AI Read
 
 ## Backlog
 - P1: PDF export of individual submissions
-- P2: Admin dashboard tab for post-evaluation data
 - Cleanup: Remove /app/api/ folder (Vercel artifact)
