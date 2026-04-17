@@ -4,7 +4,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../components/ui/dialog";
-import { ArrowRight, CheckCircle, ExternalLink, Camera, Users, Lock, ClipboardCheck, FolderOpen } from "lucide-react";
+import { ArrowRight, CheckCircle, ExternalLink, Camera, Users, Lock, ClipboardCheck } from "lucide-react";
 
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_ai-readiness-scan/artifacts/1nnj8el7_leadway_logo-removebg-preview.png";
 const CERT_PHOTO = "https://customer-assets.emergentagent.com/job_ai-readiness-scan/artifacts/qhq9e7cb_image.png";
@@ -51,120 +51,77 @@ const LandingPage = () => {
           <div className="absolute inset-0 bg-gradient-to-b from-navy/70 via-navy/75 to-navy" />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 py-12 md:py-16">
-          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
-            {/* Left — Content */}
+        <div className="relative max-w-6xl mx-auto px-4 py-8 md:py-10">
+          <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-10">
             <div className="flex-1 text-center lg:text-left">
-              {/* Completion badge */}
-              <div className="inline-flex items-center gap-2 bg-green-500/15 border border-green-400/30 rounded-full px-4 py-1.5 mb-5" data-testid="training-complete-badge">
-                <CheckCircle className="w-4 h-4 text-green-400" />
-                <span className="text-green-300 text-sm font-medium">Training Complete — April 13-15, 2026</span>
+              <div className="inline-flex items-center gap-2 bg-green-500/15 border border-green-400/30 rounded-full px-3 py-1 mb-3" data-testid="training-complete-badge">
+                <CheckCircle className="w-3.5 h-3.5 text-green-400" />
+                <span className="text-green-300 text-xs font-medium">Training Complete — April 13-15, 2026</span>
               </div>
-
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-heading font-medium text-white leading-tight mb-3">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-heading font-medium text-white leading-tight mb-2">
                 AI-Powered Enterprise<br />
                 <span className="gradient-text">Excellence Programme</span>
               </h1>
-              <p className="text-base text-gray-300 mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
+              <p className="text-sm text-gray-300 mb-5 leading-relaxed max-w-md mx-auto lg:mx-0">
                 Cohort 1 has graduated. Now tell us — how far have you travelled?
                 Complete your post-training evaluation to record your journey.
               </p>
-
-              {/* Primary CTA — Post-Training Evaluation */}
-              <Button
-                onClick={() => navigate("/post-evaluation")}
-                className="btn-gradient text-white font-semibold px-8 py-5 text-base rounded-lg shadow-lg shadow-gold/20 hover:shadow-gold/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                data-testid="post-eval-hero-btn"
-              >
-                <ClipboardCheck className="mr-2 w-5 h-5" />
-                Post-Training Evaluation
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-
-              {/* Secondary — Pre-Assessment (disabled) */}
-              <div className="mt-4 flex items-center justify-center lg:justify-start gap-2">
-                <Button
-                  disabled
-                  variant="outline"
-                  className="border-gray-600 text-gray-500 cursor-not-allowed opacity-50 px-5 py-2 text-sm"
-                  data-testid="start-assessment-btn"
-                >
-                  <Lock className="mr-2 w-3.5 h-3.5" />
-                  Pre-Training Assessment
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3">
+                <Button onClick={() => navigate("/post-evaluation")}
+                  className="btn-gradient text-white font-semibold px-6 py-4 text-sm rounded-lg shadow-lg shadow-gold/20 hover:shadow-gold/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  data-testid="post-eval-hero-btn">
+                  <ClipboardCheck className="mr-2 w-4 h-4" /> Post-Training Evaluation <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
-                <span className="text-gray-500 text-xs">Closed</span>
+                <Button disabled variant="outline" className="border-gray-600 text-gray-500 cursor-not-allowed opacity-50 px-4 py-2 text-xs" data-testid="start-assessment-btn">
+                  <Lock className="mr-1.5 w-3 h-3" /> Pre-Training Assessment
+                </Button>
               </div>
             </div>
-
-            {/* Right — CAI-P Badge */}
-            <div className="shrink-0 relative">
-              <div className="w-48 h-48 md:w-56 md:h-56 lg:w-64 lg:h-64 relative drop-shadow-[0_0_30px_rgba(212,175,55,0.25)]">
-                <img
-                  src={CAIP_BADGE}
-                  alt="Certified Artificial Intelligence Professional"
-                  className="w-full h-full object-contain animate-fade-in"
-                  data-testid="caip-badge"
-                />
+            <div className="shrink-0">
+              <div className="w-36 h-36 md:w-44 md:h-44 lg:w-52 lg:h-52 drop-shadow-[0_0_25px_rgba(212,175,55,0.2)]">
+                <img src={CAIP_BADGE} alt="Certified Artificial Intelligence Professional" className="w-full h-full object-contain animate-fade-in" data-testid="caip-badge" />
               </div>
-              <p className="text-center text-gray-400 text-[10px] mt-2 tracking-wider uppercase">Cohort 1 Certification</p>
+              <p className="text-center text-gray-400 text-[9px] mt-1 tracking-wider uppercase">Cohort 1 Certification</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Training Gallery */}
-      <section className="max-w-6xl mx-auto px-4 py-10">
-        <div className="text-center mb-6">
-          <h2 className="text-white font-heading text-xl md:text-2xl font-medium mb-1">
+      <section className="max-w-6xl mx-auto px-4 pt-4 pb-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-white font-heading text-base md:text-lg font-medium">
             Training Session <span className="text-gold">Gallery</span>
           </h2>
-          <p className="text-gray-400 text-sm">Relive the moments from each day of the programme</p>
+          <span className="text-gray-500 text-xs hidden sm:block">Click to view photos</span>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {GALLERY_LINKS.map((item) => (
-            <div
-              key={item.day}
-              onClick={() => window.open(item.url, '_blank', 'noopener,noreferrer')}
-              className={`group relative bg-gradient-to-br ${item.color} border ${item.border} rounded-xl p-5 hover:scale-[1.02] transition-all duration-300 cursor-pointer`}
-              data-testid={`gallery-${item.day.replace(' ', '-').toLowerCase()}`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className={`font-heading text-lg font-medium ${item.accent}`}>{item.day}</span>
-                <Camera className={`w-5 h-5 ${item.accent} opacity-60 group-hover:opacity-100 transition-opacity`} />
+            <div key={item.day} onClick={() => window.open(item.url, '_blank', 'noopener,noreferrer')}
+              className={`group bg-gradient-to-br ${item.color} border ${item.border} rounded-lg px-4 py-3 hover:scale-[1.02] transition-all duration-300 cursor-pointer flex items-center gap-3`}
+              data-testid={`gallery-${item.day.replace(' ', '-').toLowerCase()}`}>
+              <Camera className={`w-5 h-5 ${item.accent} shrink-0`} />
+              <div className="flex-1 min-w-0">
+                <span className={`font-heading text-sm font-medium ${item.accent}`}>{item.day}</span>
+                <span className="text-gray-400 text-xs ml-2">{item.label}</span>
               </div>
-              <p className="text-gray-300 text-sm mb-3">{item.label}</p>
-              <div className="flex items-center gap-1.5 text-gray-400 text-xs group-hover:text-white transition-colors">
-                <FolderOpen className="w-3.5 h-3.5" />
-                <span>View Photos</span>
-                <ExternalLink className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
+              <ExternalLink className="w-3.5 h-3.5 text-gray-500 group-hover:text-white shrink-0 transition-colors" />
             </div>
           ))}
         </div>
       </section>
 
       {/* Alumni Interest */}
-      <section className="max-w-6xl mx-auto px-4 pb-12">
-        <div className="bg-gradient-to-r from-gold/10 via-gold/5 to-navy border border-gold/20 rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center gap-6">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <Users className="w-5 h-5 text-gold" />
-              <h3 className="text-white font-heading text-lg font-medium">Join the Alumni Network</h3>
-            </div>
-            <p className="text-gray-300 text-sm leading-relaxed">
-              Stay connected with fellow Cohort 1 graduates. Get access to the alumni platform for continued learning,
-              collaboration, and exclusive follow-up sessions. Indicate your interest in the post-training evaluation.
-            </p>
+      <section className="max-w-6xl mx-auto px-4 pb-6">
+        <div className="bg-gradient-to-r from-gold/10 via-gold/5 to-navy border border-gold/20 rounded-lg px-5 py-4 flex flex-col sm:flex-row items-center gap-4">
+          <Users className="w-5 h-5 text-gold shrink-0" />
+          <div className="flex-1 text-center sm:text-left">
+            <h3 className="text-white font-heading text-sm font-medium">Join the Alumni Network</h3>
+            <p className="text-gray-400 text-xs leading-relaxed">Stay connected with Cohort 1 graduates. Indicate your interest in the post-training evaluation.</p>
           </div>
-          <Button
-            onClick={() => navigate("/post-evaluation")}
-            variant="outline"
-            className="border-gold/50 text-gold hover:bg-gold hover:text-navy shrink-0 px-5 transition-all"
-            data-testid="alumni-cta"
-          >
-            Complete Evaluation
-            <ArrowRight className="ml-2 w-4 h-4" />
+          <Button onClick={() => navigate("/post-evaluation")} variant="outline"
+            className="border-gold/50 text-gold hover:bg-gold hover:text-navy shrink-0 px-4 h-8 text-xs transition-all" data-testid="alumni-cta">
+            Complete Evaluation <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
           </Button>
         </div>
       </section>
