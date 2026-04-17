@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Users, Download, LogOut, Search, Filter, Eye, ChevronLeft, ChevronRight, TrendingUp, Shield, Lightbulb, RefreshCw, Loader2, AlertTriangle, CheckCircle, Info, Target, BookOpen, Zap, FileText, Building, UserCheck, Clock, ClipboardCheck, Star, MessageSquare } from "lucide-react";
+import { Users, Download, LogOut, Search, Filter, Eye, ChevronLeft, ChevronRight, TrendingUp, Shield, Lightbulb, RefreshCw, Loader2, AlertTriangle, CheckCircle, Info, Target, BookOpen, Zap, FileText, Building, UserCheck, Clock, ClipboardCheck, Star, MessageSquare, Rocket } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_ai-readiness-scan/artifacts/1nnj8el7_leadway_logo-removebg-preview.png";
@@ -771,6 +771,7 @@ const RatingBar = ({ label, value, max = 5 }) => (
 );
 
 const PostEvalTabContent = ({ stats, onViewDetail }) => {
+  const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
   const npsData = [
     { name: "Promoters (9-10)", value: stats.nps?.distribution?.promoters || 0 },
     { name: "Passives (7-8)", value: stats.nps?.distribution?.passives || 0 },
@@ -778,15 +779,74 @@ const PostEvalTabContent = ({ stats, onViewDetail }) => {
   ].filter(d => d.value > 0);
 
   const readinessData = Object.entries(stats.readiness_distribution || {}).map(([k, v]) => ({ name: k, value: v }));
+  const eff = stats.programme_effectiveness || {};
+  const commitSummary = stats.commitment_summary || {};
+  const feedback = stats.feedback_highlights || {};
+  const agents = stats.agents_built_summary || {};
+  const capShift = stats.capability_shift_summary || {};
+
+  const handleExportPDF = async () => {
+    try {
+      toast.info("Generating consulting report...");
+      const response = await axios.get(`${API}/admin/post-eval-report/pdf`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'Leadway_Post_Evaluation_Report.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("PDF report downloaded");
+    } catch (error) {
+      toast.error(error.response?.status === 404 ? "No data for report" : "PDF export failed");
+    }
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/post-eval-export`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'Leadway_Post_Evaluation_Responses.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("CSV exported");
+    } catch (error) {
+      toast.error("Export failed");
+    }
+  };
 
   return (
     <div className="space-y-4">
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Export Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="text-sm text-gray-500">{stats.total} evaluation{stats.total !== 1 ? 's' : ''} submitted</div>
+        <div className="flex gap-2">
+          <Button onClick={handleExportPDF} size="sm" className="bg-[#0D2137] text-white hover:bg-[#0D2137]/80 h-8 text-xs" data-testid="posteval-export-pdf">
+            <FileText className="w-3.5 h-3.5 mr-1" /> Consulting PDF Report
+          </Button>
+          <Button onClick={handleExportCSV} size="sm" variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 h-8 text-xs" data-testid="posteval-export-csv">
+            <Download className="w-3.5 h-3.5 mr-1" /> Export CSV
+          </Button>
+        </div>
+      </div>
+
+      {/* Programme Grade Card + Stats Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <Card className="bg-[#0D2137] border-0 shadow-lg col-span-2 lg:col-span-1">
+          <CardContent className="p-4 text-center">
+            <p className="text-gold text-[10px] font-medium tracking-wider uppercase">Programme Grade</p>
+            <p className="text-4xl font-bold text-white font-heading my-1">{eff.grade || "—"}</p>
+            <p className="text-gray-400 text-[10px]">{eff.programme_score || 0}/100</p>
+            <p className="text-teal text-[10px] mt-1 font-medium">{eff.nps_classification || ""}</p>
+          </CardContent>
+        </Card>
         <StatCard icon={ClipboardCheck} label="Evaluations" value={stats.total} color="bg-teal" iconColor="text-white" />
-        <StatCard icon={Star} label="NPS Average" value={stats.nps?.average ?? "—"} color="bg-gold" iconColor="text-white" />
+        <StatCard icon={Star} label="NPS Average" value={`${stats.nps?.average ?? "—"}/10`} color="bg-gold" iconColor="text-white" />
         <StatCard icon={TrendingUp} label="NPS Net Score" value={stats.nps?.net_score ?? "—"} color={stats.nps?.net_score >= 50 ? "bg-green-500" : stats.nps?.net_score >= 0 ? "bg-amber-500" : "bg-red-500"} iconColor="text-white" />
-        <StatCard icon={Target} label="Goals Achieved" value={stats.goals_achieved?.length || 0} color="bg-purple-500" iconColor="text-white" />
+        <StatCard icon={Target} label="Commitment Rate" value={`${commitSummary.commitment_rate || 0}%`} color="bg-purple-500" iconColor="text-white" />
       </div>
 
       {/* NPS + Readiness Charts */}
@@ -854,9 +914,10 @@ const PostEvalTabContent = ({ stats, onViewDetail }) => {
             <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
               <Star className="w-4 h-4 text-amber-500" /> Session Ratings (Avg)
             </CardTitle>
+            <p className="text-[10px] text-gray-400">Overall: {eff.overall_session_avg}/5</p>
           </CardHeader>
           <CardContent className="p-3">
-            {Object.entries(stats.session_ratings || {}).map(([k, v]) => (
+            {Object.entries(stats.session_ratings || {}).sort((a, b) => b[1] - a[1]).map(([k, v]) => (
               <RatingBar key={k} label={k} value={v} />
             ))}
           </CardContent>
@@ -887,41 +948,145 @@ const PostEvalTabContent = ({ stats, onViewDetail }) => {
         </Card>
       </div>
 
-      {/* Tool Comfort Averages */}
-      <Card className="bg-white border-0 shadow-sm">
-        <CardHeader className="py-3 px-4 border-b border-gray-100">
-          <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
-            <Wrench className="w-4 h-4 text-teal" /> Tool Comfort Ratings (Avg)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
-            {Object.entries(stats.tool_averages || {}).map(([tool, avg]) => (
+      {/* Tool Comfort + Agents Built */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="py-3 px-4 border-b border-gray-100">
+            <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
+              <Wrench className="w-4 h-4 text-teal" /> Tool Comfort Ratings (Avg)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3">
+            {Object.entries(stats.tool_averages || {}).sort((a, b) => b[1] - a[1]).map(([tool, avg]) => (
               <RatingBar key={tool} label={tool} value={avg} />
             ))}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Goals Achieved + One Thing Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="py-3 px-4 border-b border-gray-100">
+            <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
+              <Rocket className="w-4 h-4 text-gold" /> Agents Built
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3">
+            {agents.agents_built?.length > 0 ? (
+              <div className="space-y-1.5">
+                {agents.agents_built.map((a, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span className="text-gray-700 truncate flex-1">{a.name}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-gold rounded-full" style={{ width: `${a.percentage}%` }} />
+                      </div>
+                      <span className="text-gray-500 text-[10px] w-14 text-right">{a.percentage}% ({a.count})</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : <p className="text-gray-400 text-xs text-center py-4">No data</p>}
+            {agents.prompt_status?.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <p className="text-[10px] text-gray-400 font-medium mb-1.5">Prompt Status</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {agents.prompt_status.map((p, i) => (
+                    <Badge key={i} variant="outline" className="text-[10px] bg-gold/5 text-gold border-gold/20">{p.status} ({p.count})</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Deployment Status Heatmap */}
+      {Object.keys(stats.deployment_summary || {}).length > 0 && (
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="py-3 px-4 border-b border-gray-100">
+            <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
+              <Rocket className="w-4 h-4 text-teal" /> Deployment Status Matrix
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="text-left px-3 py-2 font-medium text-gray-600 min-w-[180px]">Build</th>
+                    {["Active Use", "In Testing", "In Progress", "Not Started", "Not Relevant"].map(s => (
+                      <th key={s} className="px-2 py-2 font-medium text-gray-500 text-center text-[10px]">{s}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {Object.entries(stats.deployment_summary).map(([item, statuses]) => (
+                    <tr key={item} className="hover:bg-gray-50">
+                      <td className="px-3 py-1.5 text-gray-800 text-[11px]">{item}</td>
+                      {["Active Use", "In Testing", "In Progress", "Not Started", "Not Relevant"].map(s => {
+                        const count = statuses[s] || 0;
+                        const bg = count === 0 ? '' : s === "Active Use" ? 'bg-green-100 text-green-700' :
+                          s === "In Testing" ? 'bg-blue-100 text-blue-700' : s === "In Progress" ? 'bg-amber-100 text-amber-700' :
+                          s === "Not Started" ? 'bg-gray-200 text-gray-600' : 'bg-gray-100 text-gray-400';
+                        return (
+                          <td key={s} className="px-2 py-1.5 text-center">
+                            {count > 0 && <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${bg}`}>{count}</span>}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Capability Shift + Goals + One Thing */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="py-3 px-4 border-b border-gray-100">
+            <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-blue-500" /> Workplace Challenges Addressed
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3">
+            {capShift.challenges_addressed?.length > 0 ? (
+              <div className="space-y-1.5">
+                {capShift.challenges_addressed.map((c, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span className="text-gray-700 truncate flex-1 pr-2">{c.name}</span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <div className="w-12 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${c.percentage}%` }} />
+                      </div>
+                      <span className="text-gray-500 text-[10px] w-8 text-right">{c.percentage}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : <p className="text-gray-400 text-xs text-center py-4">No data</p>}
+          </CardContent>
+        </Card>
+
         <Card className="bg-white border-0 shadow-sm">
           <CardHeader className="py-3 px-4 border-b border-gray-100">
             <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-green-500" /> Goals Achieved
             </CardTitle>
+            <p className="text-[10px] text-gray-400">Avg achievement: {eff.avg_goal_achievement || 0}%</p>
           </CardHeader>
           <CardContent className="p-3">
             {stats.goals_achieved?.length > 0 ? (
               <div className="space-y-1.5">
                 {stats.goals_achieved.map((g, i) => (
                   <div key={i} className="flex items-center justify-between text-xs">
-                    <span className="text-gray-700 truncate flex-1">{g.name}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <span className="text-gray-700 truncate flex-1 pr-2">{g.name}</span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <div className="w-12 h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div className="h-full bg-green-500 rounded-full" style={{ width: `${g.percentage}%` }} />
                       </div>
-                      <span className="text-gray-500 text-[10px] w-12 text-right">{g.percentage}%</span>
+                      <span className="text-gray-500 text-[10px] w-8 text-right">{g.percentage}%</span>
                     </div>
                   </div>
                 ))}
@@ -939,17 +1104,108 @@ const PostEvalTabContent = ({ stats, onViewDetail }) => {
           <CardContent className="p-3">
             {Object.keys(stats.one_thing_status || {}).length > 0 ? (
               <div className="space-y-2">
-                {Object.entries(stats.one_thing_status).map(([status, count]) => (
-                  <div key={status} className="flex items-center justify-between">
-                    <span className="text-xs text-gray-700">{status}</span>
-                    <Badge variant="outline" className="text-[10px]">{count}</Badge>
-                  </div>
-                ))}
+                {Object.entries(stats.one_thing_status).map(([status, count]) => {
+                  const pct = Math.round(count / stats.total * 100);
+                  const color = status.includes("fully") ? "bg-green-500" : status.includes("Partially") ? "bg-amber-500" : status.includes("know how") ? "bg-blue-500" : "bg-red-400";
+                  return (
+                    <div key={status}>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs text-gray-700">{status}</span>
+                        <span className="text-[10px] text-gray-500">{count} ({pct}%)</span>
+                      </div>
+                      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : <p className="text-gray-400 text-xs text-center py-4">No data</p>}
           </CardContent>
         </Card>
       </div>
+
+      {/* 30-Day Commitments */}
+      {commitSummary.top_daily_tools?.length > 0 && (
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="py-3 px-4 border-b border-gray-100">
+            <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-gold" /> 30-Day Commitments
+            </CardTitle>
+            <p className="text-[10px] text-gray-400">{commitSummary.participants_committed}/{stats.total} participants committed ({commitSummary.commitment_rate}%)</p>
+          </CardHeader>
+          <CardContent className="p-3">
+            <p className="text-[10px] text-gray-400 font-medium mb-2">Top Committed Daily Tools</p>
+            <div className="space-y-1.5">
+              {commitSummary.top_daily_tools.map((t, i) => (
+                <div key={i} className="flex items-center justify-between text-xs">
+                  <span className="text-gray-700">{t.tool}</span>
+                  <Badge variant="outline" className="text-[10px]">{t.count}</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Feedback Highlights */}
+      {(feedback.most_valuable?.length > 0 || feedback.team_messages?.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {feedback.most_valuable?.length > 0 && (
+            <Card className="bg-white border-0 shadow-sm">
+              <CardHeader className="py-3 px-4 border-b border-gray-100">
+                <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-blue-500" /> Most Valuable Learnings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 space-y-2">
+                {feedback.most_valuable.slice(0, 5).map((f, i) => (
+                  <div key={i} className="bg-gray-50 rounded-lg p-2.5">
+                    <p className="text-xs text-gray-800 italic">"{f.text}"</p>
+                    <p className="text-[10px] text-gray-400 mt-1">— {f.name}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+          {feedback.team_messages?.length > 0 && (
+            <Card className="bg-white border-0 shadow-sm">
+              <CardHeader className="py-3 px-4 border-b border-gray-100">
+                <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-gold" /> Messages to the Team
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 space-y-2">
+                {feedback.team_messages.slice(0, 5).map((f, i) => (
+                  <div key={i} className="bg-gold/5 border border-gold/10 rounded-lg p-2.5">
+                    <p className="text-xs text-gray-800 italic">"{f.text}"</p>
+                    <p className="text-[10px] text-gray-400 mt-1">— {f.name}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Before/After Reflections */}
+      {capShift.before_after_reflections?.length > 0 && (
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="py-3 px-4 border-b border-gray-100">
+            <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-teal" /> Before & After Reflections
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 space-y-2">
+            {capShift.before_after_reflections.slice(0, 5).map((r, i) => (
+              <div key={i} className="bg-teal/5 border border-teal/10 rounded-lg p-2.5">
+                <p className="text-xs text-gray-800 italic">"{r.text}"</p>
+                <p className="text-[10px] text-gray-400 mt-1">— {r.name}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Submissions Table */}
       <Card className="bg-white border-0 shadow-sm">
