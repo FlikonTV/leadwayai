@@ -1328,6 +1328,113 @@ async def get_post_evaluations(skip: int = 0, limit: int = 100):
     total = await db.post_evaluations.count_documents({})
     return {"evaluations": evaluations, "total": total}
 
+
+@api_router.get("/admin/post-eval-stats")
+async def get_post_eval_stats():
+    """Aggregate post-evaluation data for admin dashboard"""
+    total = await db.post_evaluations.count_documents({})
+    if total == 0:
+        return {"total": 0, "message": "No post-evaluations yet"}
+
+    evals = await db.post_evaluations.find({}, {"_id": 0}).to_list(1000)
+
+    # NPS
+    nps_scores = [e["data"].get("nps_score") for e in evals if e.get("data", {}).get("nps_score") is not None]
+    nps_avg = round(sum(nps_scores) / len(nps_scores), 1) if nps_scores else 0
+    nps_dist = {"promoters": 0, "passives": 0, "detractors": 0}
+    for s in nps_scores:
+        if s >= 9: nps_dist["promoters"] += 1
+        elif s >= 7: nps_dist["passives"] += 1
+        else: nps_dist["detractors"] += 1
+    nps_net = round(((nps_dist["promoters"] - nps_dist["detractors"]) / len(nps_scores)) * 100) if nps_scores else 0
+
+    # Readiness level distribution
+    readiness_dist = {}
+    for e in evals:
+        rl = e.get("data", {}).get("readiness_level", "Unknown")
+        readiness_dist[rl] = readiness_dist.get(rl, 0) + 1
+
+    # Session ratings averages
+    session_items = [
+        "Day 1 Strategy Session", "Day 1 Claude + TABS-D Framework",
+        "Day 2 GPTBots Agent Building", "Day 2 Gemini AI Automation",
+        "Day 2 ElevenLabs Voice AI", "Day 3 Workflow Design",
+        "Day 3 Capstone Build", "Overall Programme Quality"
+    ]
+    session_avgs = {}
+    for item in session_items:
+        vals = [e["data"]["session_ratings"][item] for e in evals if item in e.get("data", {}).get("session_ratings", {})]
+        session_avgs[item] = round(sum(vals) / len(vals), 1) if vals else 0
+
+    # Facilitator averages
+    dims = ["expertise", "delivery", "facilitation", "immersive", "support"]
+    fac1_avgs, fac2_avgs = {}, {}
+    for d in dims:
+        v1 = [e["data"]["facilitator1_ratings"][d] for e in evals if d in e.get("data", {}).get("facilitator1_ratings", {})]
+        v2 = [e["data"]["facilitator2_ratings"][d] for e in evals if d in e.get("data", {}).get("facilitator2_ratings", {})]
+        fac1_avgs[d] = round(sum(v1) / len(v1), 1) if v1 else 0
+        fac2_avgs[d] = round(sum(v2) / len(v2), 1) if v2 else 0
+
+    # Tool ratings averages
+    all_tools = set()
+    for e in evals:
+        all_tools.update(e.get("data", {}).get("tool_ratings", {}).keys())
+    tool_avgs = {}
+    for tool in sorted(all_tools):
+        vals = [e["data"]["tool_ratings"][tool] for e in evals if tool in e.get("data", {}).get("tool_ratings", {})]
+        tool_avgs[tool] = round(sum(vals) / len(vals), 1) if vals else 0
+
+    # Deployment status summary
+    deploy_summary = {}
+    for e in evals:
+        for item, status in e.get("data", {}).get("deployment_status", {}).items():
+            if item not in deploy_summary:
+                deploy_summary[item] = {}
+            deploy_summary[item][status] = deploy_summary[item].get(status, 0) + 1
+
+    # Goals achieved frequency
+    from collections import Counter
+    goals_counter = Counter()
+    for e in evals:
+        for g in e.get("data", {}).get("goals_achieved", []):
+            goals_counter[g] += 1
+    goals_achieved = [{"name": k, "count": v, "percentage": round(v / total * 100, 1)} for k, v in goals_counter.most_common()]
+
+    # One thing status
+    one_thing_dist = {}
+    for e in evals:
+        ot = e.get("data", {}).get("one_thing_status", "")
+        if ot:
+            one_thing_dist[ot] = one_thing_dist.get(ot, 0) + 1
+
+    # Submissions list summary
+    submissions_list = []
+    for e in evals:
+        d = e.get("data", {})
+        submissions_list.append({
+            "id": e.get("id", ""),
+            "email": e.get("email", ""),
+            "full_name": d.get("full_name", "Unknown"),
+            "subsidiary_department": d.get("subsidiary_department", ""),
+            "readiness_level": d.get("readiness_level", ""),
+            "nps_score": d.get("nps_score"),
+            "submitted_at": e.get("submitted_at", "")
+        })
+
+    return {
+        "total": total,
+        "nps": {"average": nps_avg, "net_score": nps_net, "distribution": nps_dist},
+        "readiness_distribution": readiness_dist,
+        "session_ratings": session_avgs,
+        "facilitator1_ratings": fac1_avgs,
+        "facilitator2_ratings": fac2_avgs,
+        "tool_averages": tool_avgs,
+        "deployment_summary": deploy_summary,
+        "goals_achieved": goals_achieved,
+        "one_thing_status": one_thing_dist,
+        "submissions": submissions_list
+    }
+
 # Include router
 app.include_router(api_router)
 

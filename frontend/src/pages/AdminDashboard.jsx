@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Users, Download, LogOut, Search, Filter, Eye, ChevronLeft, ChevronRight, TrendingUp, Shield, Lightbulb, RefreshCw, Loader2, AlertTriangle, CheckCircle, Info, Target, BookOpen, Zap, FileText, Building, UserCheck, Clock } from "lucide-react";
+import { Users, Download, LogOut, Search, Filter, Eye, ChevronLeft, ChevronRight, TrendingUp, Shield, Lightbulb, RefreshCw, Loader2, AlertTriangle, CheckCircle, Info, Target, BookOpen, Zap, FileText, Building, UserCheck, Clock, ClipboardCheck, Star, MessageSquare } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_ai-readiness-scan/artifacts/1nnj8el7_leadway_logo-removebg-preview.png";
@@ -34,7 +34,17 @@ const AdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
   const [activeTab, setActiveTab] = useState("overview");
+  const [postEvalStats, setPostEvalStats] = useState(null);
+  const [selectedPostEval, setSelectedPostEval] = useState(null);
   const pageSize = 8;
+
+  const loadPostEvalDetail = async (evalSummary) => {
+    try {
+      const res = await axios.get(`${API}/post-evaluations`, { params: { limit: 200 } });
+      const full = res.data.evaluations.find(e => e.id === evalSummary.id);
+      setSelectedPostEval(full || evalSummary);
+    } catch { setSelectedPostEval(evalSummary); }
+  };
 
   useEffect(() => {
     if (!sessionStorage.getItem("leadway_admin")) { navigate("/admin"); return; }
@@ -48,15 +58,17 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [statsRes, submissionsRes, reportRes] = await Promise.all([
+      const [statsRes, submissionsRes, reportRes, postEvalRes] = await Promise.all([
         axios.get(`${API}/admin/stats`),
         axios.get(`${API}/submissions`, { params: { limit: pageSize, skip: 0 } }),
-        axios.get(`${API}/admin/report`)
+        axios.get(`${API}/admin/report`),
+        axios.get(`${API}/admin/post-eval-stats`).catch(() => ({ data: { total: 0 } }))
       ]);
       setStats(statsRes.data);
       setSubmissions(submissionsRes.data.submissions);
       setTotalSubmissions(submissionsRes.data.total);
       setReport(reportRes.data);
+      setPostEvalStats(postEvalRes.data);
     } catch (error) {
       toast.error("Failed to load data");
     } finally {
@@ -195,6 +207,9 @@ const AdminDashboard = () => {
             <TabsTrigger value="report" className="text-xs">Full Report</TabsTrigger>
             <TabsTrigger value="analysis" className="text-xs">Analysis</TabsTrigger>
             <TabsTrigger value="submissions" className="text-xs">Submissions</TabsTrigger>
+            <TabsTrigger value="posteval" className="text-xs" data-testid="posteval-tab">
+              Post-Eval {postEvalStats?.total > 0 && <Badge className="ml-1 bg-teal text-white text-[9px] px-1 py-0">{postEvalStats.total}</Badge>}
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -497,10 +512,25 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Post-Eval Tab */}
+          <TabsContent value="posteval" className="space-y-4">
+            {postEvalStats?.total > 0 ? (
+              <PostEvalTabContent stats={postEvalStats} onViewDetail={loadPostEvalDetail} />
+            ) : (
+              <Card className="bg-white border-0 shadow-sm">
+                <CardContent className="p-12 text-center">
+                  <ClipboardCheck className="w-16 h-16 text-gray-200 mx-auto mb-4" />
+                  <h3 className="text-gray-900 font-medium mb-2">No Post-Evaluations Yet</h3>
+                  <p className="text-gray-500 text-sm">Post-training evaluations will appear here once participants submit them.</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
         </Tabs>
       </main>
 
-      {/* Detail Dialog */}
+      {/* Pre-Training Detail Dialog */}
       <Dialog open={!!selectedSubmission} onOpenChange={() => setSelectedSubmission(null)}>
         <DialogContent className="bg-white max-w-3xl max-h-[90vh]">
           <DialogHeader>
@@ -611,6 +641,21 @@ const AdminDashboard = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Post-Eval Detail Dialog */}
+      <Dialog open={!!selectedPostEval} onOpenChange={() => setSelectedPostEval(null)}>
+        <DialogContent className="bg-white max-w-3xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-xl">{selectedPostEval?.data?.full_name || "Participant"}</DialogTitle>
+            <DialogDescription className="text-xs">{selectedPostEval?.email} | {selectedPostEval?.data?.subsidiary_department}</DialogDescription>
+          </DialogHeader>
+          {selectedPostEval && (
+            <ScrollArea className="max-h-[65vh] pr-4">
+              <PostEvalDetail eval={selectedPostEval} />
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -710,5 +755,414 @@ const DetailSection = ({ title, items }) => (
     </div>
   </div>
 );
+
+const NPS_COLORS = { promoters: "#10B981", passives: "#F59E0B", detractors: "#EF4444" };
+const READINESS_COLORS = { Observer: "#9CA3AF", Experimenter: "#F59E0B", Practitioner: "#3B82F6", Integrator: "#10B981", Champion: "#D4AF37" };
+const DIM_LABELS = { expertise: "Subject Matter Expertise", delivery: "Delivery & Communication", facilitation: "Hands-On Facilitation", immersive: "Immersive Experience", support: "Participant Support" };
+
+const RatingBar = ({ label, value, max = 5 }) => (
+  <div className="flex items-center gap-2 py-1">
+    <span className="text-xs text-gray-700 flex-1 min-w-0 truncate">{label}</span>
+    <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden shrink-0">
+      <div className="h-full rounded-full bg-gold transition-all" style={{ width: `${(value / max) * 100}%` }} />
+    </div>
+    <span className="text-xs font-semibold text-gray-900 w-8 text-right shrink-0">{value}</span>
+  </div>
+);
+
+const PostEvalTabContent = ({ stats, onViewDetail }) => {
+  const npsData = [
+    { name: "Promoters (9-10)", value: stats.nps?.distribution?.promoters || 0 },
+    { name: "Passives (7-8)", value: stats.nps?.distribution?.passives || 0 },
+    { name: "Detractors (0-6)", value: stats.nps?.distribution?.detractors || 0 }
+  ].filter(d => d.value > 0);
+
+  const readinessData = Object.entries(stats.readiness_distribution || {}).map(([k, v]) => ({ name: k, value: v }));
+
+  return (
+    <div className="space-y-4">
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard icon={ClipboardCheck} label="Evaluations" value={stats.total} color="bg-teal" iconColor="text-white" />
+        <StatCard icon={Star} label="NPS Average" value={stats.nps?.average ?? "—"} color="bg-gold" iconColor="text-white" />
+        <StatCard icon={TrendingUp} label="NPS Net Score" value={stats.nps?.net_score ?? "—"} color={stats.nps?.net_score >= 50 ? "bg-green-500" : stats.nps?.net_score >= 0 ? "bg-amber-500" : "bg-red-500"} iconColor="text-white" />
+        <StatCard icon={Target} label="Goals Achieved" value={stats.goals_achieved?.length || 0} color="bg-purple-500" iconColor="text-white" />
+      </div>
+
+      {/* NPS + Readiness Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="py-3 px-4">
+            <CardTitle className="font-heading text-base text-gray-900 flex items-center gap-2">
+              <Star className="w-4 h-4 text-gold" /> NPS Distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-2">
+            <div className="h-[180px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={npsData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={3} dataKey="value">
+                    {npsData.map((entry, i) => (
+                      <Cell key={i} fill={Object.values(NPS_COLORS)[i]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ backgroundColor: '#0B1320', border: 'none', borderRadius: '6px', color: '#fff', fontSize: '12px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-wrap justify-center gap-3 mt-1">
+              {npsData.map((e, i) => (
+                <div key={i} className="flex items-center gap-1 text-[10px]">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: Object.values(NPS_COLORS)[i] }} />
+                  <span className="text-gray-600">{e.name} ({e.value})</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="py-3 px-4">
+            <CardTitle className="font-heading text-base text-gray-900 flex items-center gap-2">
+              <Brain className="w-4 h-4 text-blue-500" /> Readiness Level Distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-2">
+            <div className="h-[180px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={readinessData} margin={{ left: 0, right: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="name" tick={{ fontSize: 9 }} />
+                  <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                  <Tooltip contentStyle={{ backgroundColor: '#0B1320', border: 'none', borderRadius: '6px', color: '#fff', fontSize: '12px' }} />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {readinessData.map((entry, i) => (
+                      <Cell key={i} fill={READINESS_COLORS[entry.name] || "#9CA3AF"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Session Ratings + Facilitator Ratings */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="py-3 px-4 border-b border-gray-100">
+            <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
+              <Star className="w-4 h-4 text-amber-500" /> Session Ratings (Avg)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3">
+            {Object.entries(stats.session_ratings || {}).map(([k, v]) => (
+              <RatingBar key={k} label={k} value={v} />
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="py-3 px-4 border-b border-gray-100" style={{ borderTop: "3px solid #0D2137" }}>
+            <CardTitle className="font-heading text-sm text-gray-900">Dr. Celestine N. Achi</CardTitle>
+            <p className="text-[10px] text-gray-400">Lead Facilitator</p>
+          </CardHeader>
+          <CardContent className="p-3">
+            {Object.entries(stats.facilitator1_ratings || {}).map(([k, v]) => (
+              <RatingBar key={k} label={DIM_LABELS[k] || k} value={v} />
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="py-3 px-4 border-b border-gray-100" style={{ borderTop: "3px solid #006D77" }}>
+            <CardTitle className="font-heading text-sm text-gray-900">Orimolade Oluwamuyemi A.</CardTitle>
+            <p className="text-[10px] text-gray-400">Co-Facilitator</p>
+          </CardHeader>
+          <CardContent className="p-3">
+            {Object.entries(stats.facilitator2_ratings || {}).map(([k, v]) => (
+              <RatingBar key={k} label={DIM_LABELS[k] || k} value={v} />
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tool Comfort Averages */}
+      <Card className="bg-white border-0 shadow-sm">
+        <CardHeader className="py-3 px-4 border-b border-gray-100">
+          <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
+            <Wrench className="w-4 h-4 text-teal" /> Tool Comfort Ratings (Avg)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+            {Object.entries(stats.tool_averages || {}).map(([tool, avg]) => (
+              <RatingBar key={tool} label={tool} value={avg} />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Goals Achieved + One Thing Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="py-3 px-4 border-b border-gray-100">
+            <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500" /> Goals Achieved
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3">
+            {stats.goals_achieved?.length > 0 ? (
+              <div className="space-y-1.5">
+                {stats.goals_achieved.map((g, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span className="text-gray-700 truncate flex-1">{g.name}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-green-500 rounded-full" style={{ width: `${g.percentage}%` }} />
+                      </div>
+                      <span className="text-gray-500 text-[10px] w-12 text-right">{g.percentage}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : <p className="text-gray-400 text-xs text-center py-4">No data</p>}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="py-3 px-4 border-b border-gray-100">
+            <CardTitle className="font-heading text-sm text-gray-900 flex items-center gap-2">
+              <Target className="w-4 h-4 text-purple-500" /> "The One Thing" Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3">
+            {Object.keys(stats.one_thing_status || {}).length > 0 ? (
+              <div className="space-y-2">
+                {Object.entries(stats.one_thing_status).map(([status, count]) => (
+                  <div key={status} className="flex items-center justify-between">
+                    <span className="text-xs text-gray-700">{status}</span>
+                    <Badge variant="outline" className="text-[10px]">{count}</Badge>
+                  </div>
+                ))}
+              </div>
+            ) : <p className="text-gray-400 text-xs text-center py-4">No data</p>}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Submissions Table */}
+      <Card className="bg-white border-0 shadow-sm">
+        <CardHeader className="py-3 px-4 border-b border-gray-100">
+          <CardTitle className="font-heading text-base text-gray-900 flex items-center gap-2">
+            <Users className="w-4 h-4 text-teal" /> Post-Evaluation Submissions
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50 hover:bg-gray-50">
+                  <TableHead className="text-xs font-semibold py-2">Name</TableHead>
+                  <TableHead className="text-xs font-semibold py-2">Dept</TableHead>
+                  <TableHead className="text-xs font-semibold py-2">Readiness</TableHead>
+                  <TableHead className="text-xs font-semibold py-2 text-center">NPS</TableHead>
+                  <TableHead className="text-xs font-semibold py-2">Submitted</TableHead>
+                  <TableHead className="text-xs font-semibold py-2 w-10"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stats.submissions?.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-6 text-gray-500 text-sm">No evaluations yet</TableCell></TableRow>
+                ) : (
+                  stats.submissions?.map((sub) => (
+                    <TableRow key={sub.id} className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => onViewDetail(sub)} data-testid={`posteval-row-${sub.id}`}>
+                      <TableCell className="py-2">
+                        <div className="text-sm font-medium text-gray-900">{sub.full_name}</div>
+                        <div className="text-[10px] text-gray-500 truncate max-w-[150px]">{sub.email}</div>
+                      </TableCell>
+                      <TableCell className="text-xs text-gray-600 py-2">{sub.subsidiary_department}</TableCell>
+                      <TableCell className="py-2">
+                        <Badge className={`text-[10px] px-1.5 py-0.5 ${
+                          sub.readiness_level === 'Champion' ? 'bg-gold/20 text-gold border border-gold/30' :
+                          sub.readiness_level === 'Integrator' ? 'bg-green-100 text-green-700' :
+                          sub.readiness_level === 'Practitioner' ? 'bg-blue-100 text-blue-700' :
+                          sub.readiness_level === 'Experimenter' ? 'bg-amber-100 text-amber-700' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>{sub.readiness_level || "—"}</Badge>
+                      </TableCell>
+                      <TableCell className="text-center py-2">
+                        <span className={`text-xs font-bold ${sub.nps_score >= 9 ? 'text-green-600' : sub.nps_score >= 7 ? 'text-amber-600' : 'text-red-600'}`}>
+                          {sub.nps_score ?? "—"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-[10px] text-gray-500 py-2">
+                        {sub.submitted_at ? new Date(sub.submitted_at).toLocaleDateString() : "—"}
+                      </TableCell>
+                      <TableCell className="py-2">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-teal" data-testid={`view-posteval-${sub.id}`}>
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+const Brain = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2a8 8 0 0 0-8 8c0 2.5 1.2 4.7 3 6.2V20h10v-3.8c1.8-1.5 3-3.7 3-6.2a8 8 0 0 0-8-8z"/>
+    <path d="M12 2v8" /><path d="M8 10h8" />
+  </svg>
+);
+
+const Wrench = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+  </svg>
+);
+
+const PostEvalDetail = ({ eval: ev }) => {
+  const d = ev?.data || {};
+  return (
+    <div className="space-y-4">
+      {/* Profile */}
+      <DetailSection title="Profile" items={[
+        { l: "Full Name", v: d.full_name },
+        { l: "Job Title", v: d.job_title },
+        { l: "Subsidiary / Dept", v: d.subsidiary_department },
+        { l: "Years in Role", v: d.years_in_role },
+        { l: "Primary Function", v: d.primary_function },
+        { l: "Readiness Level", v: d.readiness_level }
+      ]} />
+
+      {/* AI Relationship */}
+      {d.ai_relationship?.length > 0 && (
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-blue-50 px-3 py-1.5 border-b border-gray-200">
+            <h3 className="font-medium text-blue-900 text-xs">AI Relationship Now</h3>
+          </div>
+          <div className="p-3 flex flex-wrap gap-1.5">
+            {d.ai_relationship.map((r, i) => (
+              <Badge key={i} variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">{r}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Barriers Removed */}
+      {d.barriers_removed?.length > 0 && (
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-green-50 px-3 py-1.5 border-b border-gray-200">
+            <h3 className="font-medium text-green-900 text-xs">Barriers Removed</h3>
+          </div>
+          <div className="p-3 flex flex-wrap gap-1.5">
+            {d.barriers_removed.map((b, i) => (
+              <Badge key={i} variant="outline" className="text-[10px] bg-green-50 text-green-700 border-green-200">{b}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tool Ratings */}
+      {Object.keys(d.tool_ratings || {}).length > 0 && (
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-amber-50 px-3 py-1.5 border-b border-gray-200">
+            <h3 className="font-medium text-amber-900 text-xs">Tool Comfort Ratings</h3>
+          </div>
+          <div className="p-3">
+            {Object.entries(d.tool_ratings).map(([tool, rating]) => (
+              <div key={tool} className="flex items-center justify-between py-0.5">
+                <span className="text-xs text-gray-700">{tool}</span>
+                <div className="flex gap-0.5">
+                  {[1,2,3,4,5].map(n => (
+                    <div key={n} className={`w-4 h-4 rounded text-[9px] flex items-center justify-center ${n <= rating ? 'bg-gold text-white' : 'bg-gray-100 text-gray-400'}`}>{n}</div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Open Text Responses */}
+      {d.tool_surprise && <DetailSection title="Tool That Surprised Most" items={[{ l: "Response", v: d.tool_surprise }]} />}
+      {d.biggest_impact && <DetailSection title="Biggest Impact Build" items={[{ l: "Response", v: d.biggest_impact }]} />}
+      {d.before_after_ai && <DetailSection title="Before / After AI" items={[{ l: "Response", v: d.before_after_ai }]} />}
+
+      {/* 30-Day Commitment */}
+      {d.daily_tool && (
+        <DetailSection title="30-Day Commitment" items={[
+          { l: "Daily Tool", v: d.daily_tool },
+          { l: "Share With", v: d.share_colleague },
+          { l: "Obstacle Plan", v: d.obstacle_plan }
+        ]} />
+      )}
+
+      {/* Session Ratings */}
+      {Object.keys(d.session_ratings || {}).length > 0 && (
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-purple-50 px-3 py-1.5 border-b border-gray-200">
+            <h3 className="font-medium text-purple-900 text-xs">Session Ratings</h3>
+          </div>
+          <div className="p-3">
+            {Object.entries(d.session_ratings).map(([session, rating]) => (
+              <div key={session} className="flex items-center justify-between py-0.5">
+                <span className="text-xs text-gray-700">{session}</span>
+                <span className="text-xs font-bold text-purple-700">{rating}/5</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* NPS */}
+      {d.nps_score != null && (
+        <div className="bg-gray-50 rounded-lg p-3 text-center">
+          <p className="text-gray-500 text-[10px] font-medium mb-1">Net Promoter Score</p>
+          <p className={`text-3xl font-bold ${d.nps_score >= 9 ? 'text-green-600' : d.nps_score >= 7 ? 'text-amber-600' : 'text-red-600'}`}>{d.nps_score}</p>
+        </div>
+      )}
+
+      {/* Goals Achieved */}
+      {d.goals_achieved?.length > 0 && (
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-green-50 px-3 py-1.5 border-b border-gray-200">
+            <h3 className="font-medium text-green-900 text-xs">Goals Achieved</h3>
+          </div>
+          <div className="p-3 flex flex-wrap gap-1.5">
+            {d.goals_achieved.map((g, i) => (
+              <Badge key={i} className="text-[10px] bg-green-100 text-green-700">{g}</Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Open Feedback */}
+      {(d.most_valuable || d.deeper_cohort2 || d.message_team || d.final_words) && (
+        <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="bg-navy/5 px-3 py-1.5 border-b border-gray-200">
+            <h3 className="font-medium text-gray-900 text-xs">Open Feedback</h3>
+          </div>
+          <div className="p-3 space-y-2">
+            {d.most_valuable && <div><p className="text-[10px] text-gray-400">Most valuable</p><p className="text-xs text-gray-800">{d.most_valuable}</p></div>}
+            {d.deeper_cohort2 && <div><p className="text-[10px] text-gray-400">Deeper in Cohort 2</p><p className="text-xs text-gray-800">{d.deeper_cohort2}</p></div>}
+            {d.message_team && <div><p className="text-[10px] text-gray-400">Message to team</p><p className="text-xs text-gray-800">{d.message_team}</p></div>}
+            {d.able_to && <div><p className="text-[10px] text-gray-400">I am now able to...</p><p className="text-xs text-gray-800">{d.able_to}</p></div>}
+            {d.advice_cohort2 && <div><p className="text-[10px] text-gray-400">Advice for Cohort 2</p><p className="text-xs text-gray-800">{d.advice_cohort2}</p></div>}
+            {d.final_words && <div><p className="text-[10px] text-gray-400">Final words</p><p className="text-xs text-gray-800">{d.final_words}</p></div>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default AdminDashboard;
