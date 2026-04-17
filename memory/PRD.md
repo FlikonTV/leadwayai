@@ -1,95 +1,71 @@
-# Leadway AI Readiness & Opportunity Scan - PRD
+# Leadway AI Readiness & Opportunity Scan — PRD
 
 ## Original Problem Statement
-Build a clean, premium, mobile-friendly internal web app called "Leadway AI Readiness & Opportunity Scan" - a pre-training assessment for Leadway Group ahead of in-person AI training April 8-10, 2026.
-
-## User Personas
-1. **Participants**: Leadway employees completing the assessment
-2. **Administrators**: Training coordinators viewing submissions, analytics, and insights
-
-## Core Requirements
-- Landing page with countdown timer to April 8-10, 2026
-- Multi-step assessment form (8 sections)
-- Email-based draft saving (autosave)
-- Form validation and review page
-- Detailed scoring with insights and recommendations
-- Admin dashboard with comprehensive analytics
+Build a clean, premium, mobile-friendly internal web app called "Leadway AI Readiness & Opportunity Scan" for a pre-training assessment (now April 13-15, 2026). Corporate aesthetic (navy/deep blue base, subtle gold accents, white cards). Includes landing page, multi-step assessment form, admin dashboard, and post-training evaluation.
 
 ## Architecture
-- **Frontend**: React 19 + Tailwind CSS + Shadcn UI + Recharts
-- **Backend**: FastAPI (Python)
-- **Database**: MongoDB
-- **Authentication**: Simple password for admin
+- **Frontend**: React + Tailwind CSS + Shadcn UI + Recharts
+- **Backend**: FastAPI + MongoDB (motor async driver)
+- **Hosting**: Emergent Platform (preview + deployment)
 
-## What's Been Implemented (Jan 2026)
+## Core Features
 
-### Frontend
-- [x] Compact, interactive landing page with countdown timer
-- [x] Section navigation pills in assessment form
-- [x] 8-section multi-step form with validation
-- [x] Autosave draft functionality (30-second intervals)
-- [x] Review page before submission
-- [x] Thank you page with next steps
-- [x] Admin dashboard with 4 tabs (Overview, Insights, Analysis, Submissions)
-- [x] Detailed submission modal with score breakdowns
+### 1. Landing Page (DONE)
+- Countdown timer to April 13-15, 2026
+- Corporate navy/gold aesthetic
+- "Start Assessment" CTA with email dialog
+- "Post-Training Evaluation" nav link
 
-### Backend Analysis Engine
-- [x] AI Readiness Score (0-100) with 5-factor breakdown:
-  - Familiarity, Tools Experience, Usage Frequency, Prompt Confidence, Data Understanding
-- [x] Opportunity Density Score (0-100) with 5-factor breakdown:
-  - Pain Points Count, Repetitive Tasks Detail, Benefit Areas, Capstone Quality, Success Clarity
-- [x] Governance Sensitivity Score (0-100) with 4-factor breakdown:
-  - Concerns Awareness, Privacy Awareness, Compliance Understanding, Human Oversight
-- [x] Readiness Bands: Beginner, Explorer, Emerging Practitioner, Applied User, Champion Candidate
-- [x] Personalized Insights generation (up to 5 per submission)
-- [x] Training Recommendations generation (up to 5 per submission)
-- [x] Training Focus Areas identification
-- [x] Organization-wide Insights API
+### 2. Pre-Training Assessment — 8 Sections (DONE)
+- Participant Profile, AI Awareness, Pain Points, Use Cases, Governance, Collaboration, Capstone, Learning
+- Autosave drafts via email, validation, review page
+- Scoring: AI Readiness, Opportunity Density, Governance Sensitivity
+- Readiness bands, insights, recommendations
 
-### Admin Analytics
-- [x] Real-time stats (total submissions, average scores)
-- [x] Subsidiary distribution chart
-- [x] Readiness band pie chart
-- [x] Top Pain Points aggregation
-- [x] Top AI Benefit Areas aggregation
-- [x] AI Tools Usage statistics
-- [x] Learning Expectations breakdown
-- [x] CSV export with all data including insights
+### 3. Admin Dashboard (DONE)
+- Password-protected (leadway2026)
+- Overview stats, charts (Recharts)
+- Full Report tab with executive summary
+- Analysis tab with pain points, benefit areas, tools, learning expectations
+- Submissions tab with filters, search, pagination
+- Individual submission detail dialog
+- CSV export
 
-## Scoring Logic Details
+### 4. Post-Training Evaluation — 8 Sections (DONE - April 17, 2026)
+- Route: /post-evaluation
+- Hero headline: "How Far Have You Travelled?" (italic gold "Travelled")
+- S1: Participant Profile
+- S2: AI Readiness Now (5-level spectrum, multi-selects)
+- S3: Tool Comfort Now (1-5 rating table, 10 tools)
+- S4: What You Built & Deployed (prompts, agents, deployment status table)
+- S5: Capability Shift (task comparison table, challenges, before/after)
+- S6: 30-Day Commitment (daily tool, action plan table, obstacle plan)
+- S7: Programme Evaluation (session ratings, 2 facilitator cards navy/teal, NPS 0-10, open feedback)
+- S8: Goals Revisited (achieved checkboxes, follow-up interest, final words)
+- Custom thank you: "The Testimony Is Forming." with quote block
+- Backend: POST/GET /api/post-evaluations, POST/GET /api/post-eval-drafts
 
-### AI Readiness (100 points max)
-- Familiarity (1-5): 0-25 points
-- Tools Used: 2.5 pts each, max 20 points
-- Frequency: Never=0, Rarely=5, Monthly=10, Weekly=15, Daily=20
-- Prompt Confidence (1-5): 0-20 points
-- Data Understanding (1-5): 0-15 points
+### 5. Thank You Pages (DONE)
+- Pre-training: Assessment Complete with training info
+- Post-training: "The Testimony Is Forming." with quote block and Cihan Digital Academy branding
 
-### Opportunity Density (100 points max)
-- Pain Points: 5 pts each, max 25 points
-- Repetitive Tasks Description: up to 15 points
-- Benefit Areas: 5 pts each, max 25 points
-- Capstone Problem Quality: up to 20 points
-- Success Definition Clarity: up to 15 points
+## Database Collections
+- `submissions` — Pre-training assessment submissions
+- `drafts` — Pre-training assessment drafts
+- `post_evaluations` — Post-training evaluation submissions
+- `post_eval_drafts` — Post-training evaluation drafts
 
-### Governance Sensitivity (100 points max)
-- Concerns: 6 pts each, max 30 points
-- Privacy Awareness (1-5): 0-25 points
-- Compliance Awareness (1-5): 0-25 points
-- Human Oversight Recognition: up to 20 points
+## Key Files
+- `/app/backend/server.py` — All API endpoints
+- `/app/frontend/src/pages/LandingPage.jsx` — Landing page
+- `/app/frontend/src/pages/AssessmentForm.jsx` — Pre-training form
+- `/app/frontend/src/pages/PostEvaluation.jsx` — Post-training form
+- `/app/frontend/src/pages/PostEvalThankYou.jsx` — Post-eval thank you
+- `/app/frontend/src/pages/AdminDashboard.jsx` — Admin panel
+- `/app/frontend/src/App.js` — Routes
 
-## Admin Access
-- URL: `/admin`
-- Password: `leadway2026`
-
-## Next Steps / Backlog
-### P1 (Important)
-- Email notifications for submission confirmations
-- Submission deadline enforcement
-- PDF export of individual submissions
-
-### P2 (Nice to have)
-- Comparison analytics across subsidiaries
-- Real-time dashboard updates via WebSocket
-- Pre-training material recommendations based on readiness score
-- Bulk analysis reports for training facilitators
+## Backlog
+- P1: PDF export of individual submissions
+- P2: PDF export of full report
+- P2: Admin dashboard tab for post-evaluation data
+- Cleanup: Remove /app/api/ folder (Vercel artifact)
