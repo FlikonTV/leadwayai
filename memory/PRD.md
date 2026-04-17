@@ -53,14 +53,21 @@ Build a clean, premium, mobile-friendly internal web app called "Leadway AI Read
 - S8: Goals Revisited (achieved checkboxes, follow-up interest, final words)
 - Custom thank you: "The Testimony Is Forming." with quote block
 
-### 7. Post-Eval Admin Dashboard Tab (DONE - April 17, 2026)
+### 7. Post-Eval Admin Dashboard Tab (UPDATED - April 17, 2026)
 - New "Post-Eval" tab in admin dashboard with badge count
-- GET /api/admin/post-eval-stats aggregates: NPS (avg, net, distribution), readiness distribution, session ratings, facilitator ratings, tool comfort averages, deployment summary, goals achieved, one-thing status
-- Charts: NPS pie chart (promoters/passives/detractors), readiness bar chart
-- Three-column layout: session ratings, Dr. Celestine card (navy), Orimolade card (teal)
-- Tool comfort 2-column layout, goals achieved with progress bars, one-thing status
-- Submissions table with readiness badges, NPS scores, detail dialog on click
-- Detail dialog: profile, AI relationship, barriers removed, tool ratings, session ratings, NPS, goals, open feedback
+- **Programme Grade Card**: A/B/C/D grade based on composite score (session avg 30%, NPS 30%, goal achievement 40%)
+- **NPS Classification**: World Class / Excellent / Good / Needs Improvement
+- Charts: NPS pie chart, readiness bar chart
+- Session ratings sorted by score, two facilitator cards (Dr. Celestine navy, Orimolade teal)
+- Tool Comfort ratings, Agents Built with prompt status badges
+- **Deployment Status Matrix**: color-coded heatmap of build statuses
+- **Capability Shift**: workplace challenges, goals achieved with avg %, "one thing" status with progress bars
+- **30-Day Commitments**: participation rate, top daily tools
+- **Feedback Highlights**: most valuable learnings, messages to team (quoted cards)
+- **Before & After Reflections**: teal-themed quote cards
+- Submissions table with detail dialog
+- **Consulting PDF Report**: 13-section stakeholder report (cover page with grade, exec summary, NPS analysis, readiness, sessions, facilitators, tools, deployment, goals, capability shift, commitments, feedback, recommendations, individual summary)
+- **CSV Export**: 60-column flat export of all response fields for spreadsheet analysis
 - Backend: POST/GET /api/post-evaluations, POST/GET /api/post-eval-drafts
 
 ### 5. Thank You Pages (DONE)
