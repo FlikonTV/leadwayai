@@ -921,6 +921,61 @@ async def export_csv():
         headers={"Content-Disposition": "attachment; filename=leadway_ai_readiness_submissions.csv"}
     )
 
+# ==================== POST-EVALUATION ENDPOINTS ====================
+
+class PostEvalDraftCreate(BaseModel):
+    email: str
+    data: Dict[str, Any] = {}
+
+class PostEvalSubmissionCreate(BaseModel):
+    email: str
+    data: Dict[str, Any] = {}
+
+@api_router.post("/post-eval-drafts")
+async def save_post_eval_draft(draft_input: PostEvalDraftCreate):
+    existing = await db.post_eval_drafts.find_one({"email": draft_input.email}, {"_id": 0})
+    if existing:
+        await db.post_eval_drafts.update_one(
+            {"email": draft_input.email},
+            {"$set": {"data": draft_input.data, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        return {"message": "Draft updated", "email": draft_input.email}
+    else:
+        doc = {
+            "id": str(uuid.uuid4()),
+            "email": draft_input.email,
+            "data": draft_input.data,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.post_eval_drafts.insert_one(doc)
+        return {"message": "Draft saved", "id": doc["id"], "email": draft_input.email}
+
+@api_router.get("/post-eval-drafts/{email}")
+async def get_post_eval_draft(email: str):
+    draft = await db.post_eval_drafts.find_one({"email": email}, {"_id": 0})
+    if not draft:
+        raise HTTPException(status_code=404, detail="No draft found")
+    return draft
+
+@api_router.post("/post-evaluations")
+async def create_post_evaluation(submission: PostEvalSubmissionCreate):
+    doc = {
+        "id": str(uuid.uuid4()),
+        "email": submission.email,
+        "data": submission.data,
+        "submitted_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.post_evaluations.insert_one(doc)
+    await db.post_eval_drafts.delete_one({"email": submission.email})
+    doc.pop("_id", None)
+    return doc
+
+@api_router.get("/post-evaluations")
+async def get_post_evaluations(skip: int = 0, limit: int = 100):
+    evaluations = await db.post_evaluations.find({}, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
+    total = await db.post_evaluations.count_documents({})
+    return {"evaluations": evaluations, "total": total}
+
 # Include router
 app.include_router(api_router)
 

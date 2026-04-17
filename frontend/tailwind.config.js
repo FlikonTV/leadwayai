@@ -14,6 +14,7 @@ module.exports = {
             colors: {
                 navy: '#0B1320',
                 gold: '#D4AF37',
+                teal: '#006D77',
                 'sunset-orange': '#E87A00',
                 background: 'hsl(var(--background))',
                 foreground: 'hsl(var(--foreground))',

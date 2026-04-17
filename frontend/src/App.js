@@ -6,6 +6,8 @@ import AssessmentForm from "./pages/AssessmentForm";
 import ThankYouPage from "./pages/ThankYouPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
+import PostEvaluation from "./pages/PostEvaluation";
+import PostEvalThankYou from "./pages/PostEvalThankYou";
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
           <Route path="/thank-you" element={<ThankYouPage />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/post-evaluation" element={<PostEvaluation />} />
+          <Route path="/post-eval-thank-you" element={<PostEvalThankYou />} />
         </Routes>
       </BrowserRouter>
       <Toaster position="bottom-right" richColors />

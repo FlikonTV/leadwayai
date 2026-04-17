@@ -86,9 +86,14 @@ const LandingPage = () => {
               <img src={LOGO_URL} alt="Leadway Logo" className="h-8 w-auto" data-testid="leadway-logo" />
               <span className="text-white font-heading text-base font-medium hidden sm:block">Leadway Group</span>
             </div>
-            <a href="/admin" className="text-gray-400 hover:text-gold text-sm transition-all hover:scale-105" data-testid="admin-link">
-              Admin
-            </a>
+            <div className="flex items-center gap-4">
+              <a href="/post-evaluation" className="text-gray-300 hover:text-gold text-sm transition-all hover:scale-105" data-testid="post-eval-link">
+                Post-Training Evaluation
+              </a>
+              <a href="/admin" className="text-gray-400 hover:text-gold text-sm transition-all hover:scale-105" data-testid="admin-link">
+                Admin
+              </a>
+            </div>
           </div>
         </div>
       </header>
