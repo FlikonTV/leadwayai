@@ -10,11 +10,14 @@ Build a clean, premium, mobile-friendly internal web app called "Leadway AI Read
 
 ## Core Features
 
-### 1. Landing Page (DONE)
-- Countdown timer to April 13-15, 2026
+### 1. Landing Page (UPDATED - April 17, 2026)
+- Certification group photo as hero background with dark overlay
+- "Training Complete" green badge
+- "Post-Training Evaluation" as primary gold CTA in hero
+- "Pre-Training Assessment" disabled with "Closed" label
+- Training Session Gallery (Day 1, 2, 3 Google Drive folder links)
+- Alumni Network interest section
 - Corporate navy/gold aesthetic
-- "Start Assessment" CTA with email dialog
-- "Post-Training Evaluation" nav link
 
 ### 2. Pre-Training Assessment — 8 Sections (DONE)
 - Participant Profile, AI Awareness, Pain Points, Use Cases, Governance, Collaboration, Capstone, Learning
