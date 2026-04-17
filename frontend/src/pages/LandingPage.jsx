@@ -8,6 +8,7 @@ import { ArrowRight, CheckCircle, ExternalLink, Camera, Users, Lock, ClipboardCh
 
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_ai-readiness-scan/artifacts/1nnj8el7_leadway_logo-removebg-preview.png";
 const CERT_PHOTO = "https://customer-assets.emergentagent.com/job_ai-readiness-scan/artifacts/qhq9e7cb_image.png";
+const CAIP_BADGE = "https://customer-assets.emergentagent.com/job_ai-readiness-scan/artifacts/g7a194uk_Newbadge-removebg-preview.png";
 
 const GALLERY_LINKS = [
   { day: "Day 1", label: "Strategy & Claude TABS-D", url: "https://drive.google.com/drive/folders/1AMu_2-_DQStTnEf0jB2lW1ZmLiQNHJ6b", color: "from-blue-500/20 to-blue-600/10", border: "border-blue-400/30", accent: "text-blue-400" },
@@ -47,49 +48,65 @@ const LandingPage = () => {
         {/* Background image */}
         <div className="absolute inset-0">
           <img src={CERT_PHOTO} alt="Cohort 1 Graduates" className="w-full h-full object-cover object-top" />
-          <div className="absolute inset-0 bg-gradient-to-b from-navy/85 via-navy/90 to-navy" />
+          <div className="absolute inset-0 bg-gradient-to-b from-navy/70 via-navy/75 to-navy" />
         </div>
 
         <div className="relative max-w-6xl mx-auto px-4 py-12 md:py-16">
-          <div className="max-w-2xl mx-auto text-center">
-            {/* Completion badge */}
-            <div className="inline-flex items-center gap-2 bg-green-500/15 border border-green-400/30 rounded-full px-4 py-1.5 mb-5" data-testid="training-complete-badge">
-              <CheckCircle className="w-4 h-4 text-green-400" />
-              <span className="text-green-300 text-sm font-medium">Training Complete — April 13-15, 2026</span>
+          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+            {/* Left — Content */}
+            <div className="flex-1 text-center lg:text-left">
+              {/* Completion badge */}
+              <div className="inline-flex items-center gap-2 bg-green-500/15 border border-green-400/30 rounded-full px-4 py-1.5 mb-5" data-testid="training-complete-badge">
+                <CheckCircle className="w-4 h-4 text-green-400" />
+                <span className="text-green-300 text-sm font-medium">Training Complete — April 13-15, 2026</span>
+              </div>
+
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-heading font-medium text-white leading-tight mb-3">
+                AI-Powered Enterprise<br />
+                <span className="gradient-text">Excellence Programme</span>
+              </h1>
+              <p className="text-base text-gray-300 mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0">
+                Cohort 1 has graduated. Now tell us — how far have you travelled?
+                Complete your post-training evaluation to record your journey.
+              </p>
+
+              {/* Primary CTA — Post-Training Evaluation */}
+              <Button
+                onClick={() => navigate("/post-evaluation")}
+                className="btn-gradient text-white font-semibold px-8 py-5 text-base rounded-lg shadow-lg shadow-gold/20 hover:shadow-gold/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                data-testid="post-eval-hero-btn"
+              >
+                <ClipboardCheck className="mr-2 w-5 h-5" />
+                Post-Training Evaluation
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+
+              {/* Secondary — Pre-Assessment (disabled) */}
+              <div className="mt-4 flex items-center justify-center lg:justify-start gap-2">
+                <Button
+                  disabled
+                  variant="outline"
+                  className="border-gray-600 text-gray-500 cursor-not-allowed opacity-50 px-5 py-2 text-sm"
+                  data-testid="start-assessment-btn"
+                >
+                  <Lock className="mr-2 w-3.5 h-3.5" />
+                  Pre-Training Assessment
+                </Button>
+                <span className="text-gray-500 text-xs">Closed</span>
+              </div>
             </div>
 
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-heading font-medium text-white leading-tight mb-3">
-              AI-Powered Enterprise<br />
-              <span className="gradient-text">Excellence Programme</span>
-            </h1>
-            <p className="text-base text-gray-300 mb-8 leading-relaxed max-w-lg mx-auto">
-              Cohort 1 has graduated. Now tell us — how far have you travelled?
-              Complete your post-training evaluation to record your journey.
-            </p>
-
-            {/* Primary CTA — Post-Training Evaluation */}
-            <Button
-              onClick={() => navigate("/post-evaluation")}
-              className="btn-gradient text-white font-semibold px-8 py-5 text-base rounded-lg shadow-lg shadow-gold/20 hover:shadow-gold/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
-              data-testid="post-eval-hero-btn"
-            >
-              <ClipboardCheck className="mr-2 w-5 h-5" />
-              Post-Training Evaluation
-              <ArrowRight className="ml-2 w-4 h-4" />
-            </Button>
-
-            {/* Secondary — Pre-Assessment (disabled) */}
-            <div className="mt-4 flex items-center justify-center gap-2">
-              <Button
-                disabled
-                variant="outline"
-                className="border-gray-600 text-gray-500 cursor-not-allowed opacity-50 px-5 py-2 text-sm"
-                data-testid="start-assessment-btn"
-              >
-                <Lock className="mr-2 w-3.5 h-3.5" />
-                Pre-Training Assessment
-              </Button>
-              <span className="text-gray-500 text-xs">Closed</span>
+            {/* Right — CAI-P Badge */}
+            <div className="shrink-0 relative">
+              <div className="w-48 h-48 md:w-56 md:h-56 lg:w-64 lg:h-64 relative drop-shadow-[0_0_30px_rgba(212,175,55,0.25)]">
+                <img
+                  src={CAIP_BADGE}
+                  alt="Certified Artificial Intelligence Professional"
+                  className="w-full h-full object-contain animate-fade-in"
+                  data-testid="caip-badge"
+                />
+              </div>
+              <p className="text-center text-gray-400 text-[10px] mt-2 tracking-wider uppercase">Cohort 1 Certification</p>
             </div>
           </div>
         </div>
