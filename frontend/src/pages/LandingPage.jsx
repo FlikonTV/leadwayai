@@ -123,12 +123,10 @@ const LandingPage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {GALLERY_LINKS.map((item) => (
-            <a
+            <div
               key={item.day}
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`group relative bg-gradient-to-br ${item.color} border ${item.border} rounded-xl p-5 hover:scale-[1.02] transition-all duration-300`}
+              onClick={() => window.open(item.url, '_blank', 'noopener,noreferrer')}
+              className={`group relative bg-gradient-to-br ${item.color} border ${item.border} rounded-xl p-5 hover:scale-[1.02] transition-all duration-300 cursor-pointer`}
               data-testid={`gallery-${item.day.replace(' ', '-').toLowerCase()}`}
             >
               <div className="flex items-center justify-between mb-2">
@@ -141,7 +139,7 @@ const LandingPage = () => {
                 <span>View Photos</span>
                 <ExternalLink className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-            </a>
+            </div>
           ))}
         </div>
       </section>
