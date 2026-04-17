@@ -38,6 +38,12 @@ Build a clean, premium, mobile-friendly internal web app called "Leadway AI Read
 - S2: AI Readiness Now (5-level spectrum, multi-selects)
 - S3: Tool Comfort Now (1-5 rating table, 10 tools)
 - S4: What You Built & Deployed (prompts, agents, deployment status table)
+
+### 6. PDF Report Export (DONE - April 17, 2026)
+- GET /api/admin/report/pdf generates corporate-styled stakeholder PDF
+- Includes: executive summary, overall scores with bar charts, readiness band distribution table, subsidiary breakdown, role level, AI usage frequency, top pain points, benefit areas, governance concerns, AI tools, learning expectations, capstone highlights, individual submission scores
+- Corporate branding: Leadway + Cihan Digital Academy
+- "PDF Report" button in admin dashboard header
 - S5: Capability Shift (task comparison table, challenges, before/after)
 - S6: 30-Day Commitment (daily tool, action plan table, obstacle plan)
 - S7: Programme Evaluation (session ratings, 2 facilitator cards navy/teal, NPS 0-10, open feedback)
@@ -66,6 +72,5 @@ Build a clean, premium, mobile-friendly internal web app called "Leadway AI Read
 
 ## Backlog
 - P1: PDF export of individual submissions
-- P2: PDF export of full report
 - P2: Admin dashboard tab for post-evaluation data
 - Cleanup: Remove /app/api/ folder (Vercel artifact)
