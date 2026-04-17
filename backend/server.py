@@ -12,6 +12,7 @@ import uuid
 from datetime import datetime, timezone
 import io
 import csv
+from fpdf import FPDF
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -919,6 +920,357 @@ async def export_csv():
         io.BytesIO(output.getvalue().encode()),
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=leadway_ai_readiness_submissions.csv"}
+    )
+
+
+class ReportPDF(FPDF):
+    """Custom PDF class for Leadway AI Readiness Report"""
+    NAVY = (13, 33, 55)
+    GOLD = (184, 134, 11)
+    TEAL = (0, 109, 119)
+    WHITE = (255, 255, 255)
+    LIGHT_GRAY = (245, 245, 245)
+    GRAY = (120, 120, 120)
+    DARK = (30, 30, 30)
+
+    def header(self):
+        self.set_fill_color(*self.NAVY)
+        self.rect(0, 0, 210, 18, 'F')
+        self.set_font('Helvetica', 'B', 11)
+        self.set_text_color(*self.WHITE)
+        self.set_y(5)
+        self.cell(0, 8, 'Leadway Group  |  AI Readiness & Opportunity Scan', align='C')
+        self.ln(14)
+
+    def footer(self):
+        self.set_y(-12)
+        self.set_font('Helvetica', '', 7)
+        self.set_text_color(*self.GRAY)
+        self.cell(0, 10, f'(c) Cihan Digital Academy  |  Page {self.page_no()}/{{nb}}', align='C')
+
+    def section_title(self, title):
+        self.ln(4)
+        self.set_fill_color(*self.NAVY)
+        self.set_text_color(*self.WHITE)
+        self.set_font('Helvetica', 'B', 11)
+        self.cell(0, 8, f'  {title}', fill=True, new_x="LMARGIN", new_y="NEXT")
+        self.ln(2)
+
+    def sub_title(self, title):
+        self.set_text_color(*self.NAVY)
+        self.set_font('Helvetica', 'B', 9)
+        self.cell(0, 6, title, new_x="LMARGIN", new_y="NEXT")
+        self.ln(1)
+
+    def body_text(self, text):
+        self.set_text_color(*self.DARK)
+        self.set_font('Helvetica', '', 9)
+        self.multi_cell(0, 5, text)
+        self.ln(1)
+
+    def gold_label(self, label, value):
+        self.set_font('Helvetica', '', 8)
+        self.set_text_color(*self.GRAY)
+        self.cell(55, 5, label)
+        self.set_font('Helvetica', 'B', 9)
+        self.set_text_color(*self.NAVY)
+        self.cell(0, 5, str(value), new_x="LMARGIN", new_y="NEXT")
+
+    def score_bar(self, label, score, max_val=100):
+        self.set_font('Helvetica', '', 8)
+        self.set_text_color(*self.DARK)
+        self.cell(58, 6, label)
+        x = self.get_x()
+        y = self.get_y()
+        bar_w = 90
+        # Background bar
+        self.set_fill_color(*self.LIGHT_GRAY)
+        self.rect(x, y + 1, bar_w, 4, 'F')
+        # Fill bar
+        fill_w = (score / max_val) * bar_w if max_val > 0 else 0
+        self.set_fill_color(*self.GOLD)
+        self.rect(x, y + 1, fill_w, 4, 'F')
+        self.set_x(x + bar_w + 3)
+        self.set_font('Helvetica', 'B', 8)
+        self.set_text_color(*self.NAVY)
+        self.cell(0, 6, f'{score}%', new_x="LMARGIN", new_y="NEXT")
+
+    def add_table(self, headers, rows, col_widths=None):
+        if not col_widths:
+            col_widths = [190 / len(headers)] * len(headers)
+        # Header row
+        self.set_fill_color(*self.NAVY)
+        self.set_text_color(*self.WHITE)
+        self.set_font('Helvetica', 'B', 7.5)
+        for i, h in enumerate(headers):
+            self.cell(col_widths[i], 6, h, border=1, fill=True)
+        self.ln()
+        # Data rows
+        self.set_text_color(*self.DARK)
+        self.set_font('Helvetica', '', 7.5)
+        for ri, row in enumerate(rows):
+            fill = ri % 2 == 0
+            if fill:
+                self.set_fill_color(*self.LIGHT_GRAY)
+            for i, cell in enumerate(row):
+                self.cell(col_widths[i], 5.5, str(cell)[:50], border=1, fill=fill)
+            self.ln()
+        self.ln(2)
+
+    def ranked_list(self, items, key_name="name", val_key="percentage", max_items=10):
+        for i, item in enumerate(items[:max_items]):
+            name = str(item.get(key_name, ''))[:60]
+            pct = item.get(val_key, 0)
+            count = item.get('count', '')
+            self.set_font('Helvetica', '', 8)
+            self.set_text_color(*self.DARK)
+            self.cell(5, 5, f'{i+1}.')
+            self.cell(100, 5, name)
+            x = self.get_x()
+            y = self.get_y()
+            bar_w = 50
+            self.set_fill_color(*self.LIGHT_GRAY)
+            self.rect(x, y + 1, bar_w, 3, 'F')
+            self.set_fill_color(*self.TEAL)
+            self.rect(x, y + 1, (pct / 100) * bar_w, 3, 'F')
+            self.set_x(x + bar_w + 2)
+            self.set_font('Helvetica', 'B', 7)
+            self.set_text_color(*self.NAVY)
+            self.cell(0, 5, f'{pct}% ({count})', new_x="LMARGIN", new_y="NEXT")
+
+
+@api_router.get("/admin/report/pdf")
+async def export_report_pdf():
+    """Generate a comprehensive PDF report for stakeholders"""
+    total = await db.submissions.count_documents({})
+    if total == 0:
+        raise HTTPException(status_code=404, detail="No submissions to generate report")
+
+    submissions = await db.submissions.find({}, {"_id": 0}).to_list(1000)
+
+    # Compute all stats (same as /admin/report)
+    avg_ai = round(sum(s.get('ai_readiness_score', 0) for s in submissions) / total, 1)
+    avg_opp = round(sum(s.get('opportunity_density_score', 0) for s in submissions) / total, 1)
+    avg_gov = round(sum(s.get('governance_sensitivity_score', 0) for s in submissions) / total, 1)
+
+    bands = {}
+    for s in submissions:
+        band = s.get('readiness_band', 'Unknown')
+        bands[band] = bands.get(band, 0) + 1
+
+    subsidiary_stats = {}
+    for s in submissions:
+        sub = s.get('subsidiary', 'Unknown')
+        if sub not in subsidiary_stats:
+            subsidiary_stats[sub] = {'count': 0, 'ai_total': 0, 'opp_total': 0, 'gov_total': 0}
+        subsidiary_stats[sub]['count'] += 1
+        subsidiary_stats[sub]['ai_total'] += s.get('ai_readiness_score', 0)
+        subsidiary_stats[sub]['opp_total'] += s.get('opportunity_density_score', 0)
+        subsidiary_stats[sub]['gov_total'] += s.get('governance_sensitivity_score', 0)
+    for sub in subsidiary_stats:
+        c = subsidiary_stats[sub]['count']
+        subsidiary_stats[sub]['avg_ai'] = round(subsidiary_stats[sub]['ai_total'] / c, 1)
+        subsidiary_stats[sub]['avg_opp'] = round(subsidiary_stats[sub]['opp_total'] / c, 1)
+        subsidiary_stats[sub]['avg_gov'] = round(subsidiary_stats[sub]['gov_total'] / c, 1)
+
+    role_stats = {}
+    for s in submissions:
+        rl = s.get('role_level', 'Unknown')
+        role_stats[rl] = role_stats.get(rl, 0) + 1
+
+    freq_dist = {}
+    for s in submissions:
+        f = s.get('usage_frequency', 'Unknown')
+        freq_dist[f] = freq_dist.get(f, 0) + 1
+
+    # Top lists
+    from collections import Counter
+    pain_counter = Counter()
+    benefit_counter = Counter()
+    gov_counter = Counter()
+    learn_counter = Counter()
+    tool_counter = Counter()
+    for s in submissions:
+        for pp in s.get('workflow_pain_points', []):
+            pain_counter[pp] += 1
+        for ba in s.get('areas_benefit_ai', []):
+            benefit_counter[ba] += 1
+        for gc in s.get('governance_concerns', []):
+            gov_counter[gc] += 1
+        for le in s.get('learning_expectations', []):
+            learn_counter[le] += 1
+        for t in s.get('ai_tools_used', []):
+            tool_counter[t] += 1
+
+    def to_ranked(counter, n=10):
+        return [{"name": k, "count": v, "percentage": round(v / total * 100, 1)} for k, v in counter.most_common(n)]
+
+    top_pain = to_ranked(pain_counter)
+    top_benefit = to_ranked(benefit_counter)
+    top_gov = to_ranked(gov_counter)
+    top_learn = to_ranked(learn_counter)
+    top_tools = to_ranked(tool_counter)
+
+    capstone_themes = []
+    for s in submissions:
+        if s.get('capstone_problem'):
+            capstone_themes.append({
+                "name": s.get('full_name', 'Anonymous'),
+                "subsidiary": s.get('subsidiary', ''),
+                "problem": s.get('capstone_problem', ''),
+                "impact": s.get('capstone_impact', '')
+            })
+
+    # ---- BUILD PDF ----
+    pdf = ReportPDF('P', 'mm', 'A4')
+    pdf.alias_nb_pages()
+    pdf.set_auto_page_break(auto=True, margin=18)
+    pdf.add_page()
+
+    # Title page content
+    pdf.ln(5)
+    pdf.set_font('Helvetica', 'B', 20)
+    pdf.set_text_color(*ReportPDF.NAVY)
+    pdf.cell(0, 10, 'AI Readiness & Opportunity Scan', align='C', new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font('Helvetica', '', 11)
+    pdf.set_text_color(*ReportPDF.GRAY)
+    pdf.cell(0, 7, 'Comprehensive Organisation Report', align='C', new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font('Helvetica', '', 9)
+    pdf.cell(0, 5, f'Leadway Group  |  AI-Powered Enterprise Excellence Programme  |  April 13-15, 2026', align='C', new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 5, f'Generated: {datetime.now(timezone.utc).strftime("%d %B %Y, %H:%M UTC")}  |  Total Respondents: {total}', align='C', new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(3)
+
+    # Divider
+    pdf.set_draw_color(*ReportPDF.GOLD)
+    pdf.set_line_width(0.5)
+    pdf.line(30, pdf.get_y(), 180, pdf.get_y())
+    pdf.ln(5)
+
+    # Executive Summary
+    pdf.section_title('EXECUTIVE SUMMARY')
+    overall_band = max(bands, key=bands.get) if bands else "N/A"
+    exec_text = (
+        f"A total of {total} participants across {len(subsidiary_stats)} subsidiaries completed the "
+        f"AI Readiness & Opportunity Scan. The organisation's average AI Readiness Score is {avg_ai}%, "
+        f"Opportunity Density is {avg_opp}%, and Governance Sensitivity stands at {avg_gov}%. "
+        f"The most common readiness band is \"{overall_band}\" "
+        f"({bands.get(overall_band, 0)} participants, {round(bands.get(overall_band, 0) / total * 100)}%)."
+    )
+    pdf.body_text(exec_text)
+
+    # Overall Scores
+    pdf.section_title('OVERALL SCORES')
+    pdf.score_bar('AI Readiness', avg_ai)
+    pdf.score_bar('Opportunity Density', avg_opp)
+    pdf.score_bar('Governance Sensitivity', avg_gov)
+    pdf.ln(2)
+
+    # Readiness Distribution
+    pdf.section_title('READINESS BAND DISTRIBUTION')
+    band_order = ["AI Novice", "Emerging Practitioner", "Developing Strategist", "AI Ready", "AI Champion"]
+    band_headers = ["Readiness Band", "Count", "Percentage"]
+    band_rows = []
+    for b in band_order:
+        if b in bands:
+            band_rows.append([b, str(bands[b]), f"{round(bands[b] / total * 100, 1)}%"])
+    for b in bands:
+        if b not in band_order:
+            band_rows.append([b, str(bands[b]), f"{round(bands[b] / total * 100, 1)}%"])
+    pdf.add_table(band_headers, band_rows, [85, 30, 75])
+
+    # Subsidiary Breakdown
+    pdf.section_title('SUBSIDIARY BREAKDOWN')
+    sub_headers = ["Subsidiary", "N", "AI Readiness", "Opportunity", "Governance"]
+    sub_rows = []
+    for sub, st in sorted(subsidiary_stats.items()):
+        sub_rows.append([sub[:30], str(st['count']), f"{st['avg_ai']}%", f"{st['avg_opp']}%", f"{st['avg_gov']}%"])
+    pdf.add_table(sub_headers, sub_rows, [60, 15, 38, 38, 39])
+
+    # Role Level Breakdown
+    pdf.section_title('ROLE LEVEL BREAKDOWN')
+    role_headers = ["Role Level", "Count", "Percentage"]
+    role_rows = [[r, str(c), f"{round(c / total * 100, 1)}%"] for r, c in sorted(role_stats.items(), key=lambda x: -x[1])]
+    pdf.add_table(role_headers, role_rows, [85, 30, 75])
+
+    # AI Usage Frequency
+    pdf.section_title('AI USAGE FREQUENCY')
+    freq_headers = ["Frequency", "Count", "Percentage"]
+    freq_rows = [[f, str(c), f"{round(c / total * 100, 1)}%"] for f, c in sorted(freq_dist.items(), key=lambda x: -x[1])]
+    pdf.add_table(freq_headers, freq_rows, [85, 30, 75])
+
+    # Top Pain Points
+    if top_pain:
+        pdf.section_title('TOP WORKFLOW PAIN POINTS')
+        pdf.ranked_list(top_pain)
+        pdf.ln(1)
+
+    # Top Benefit Areas
+    if top_benefit:
+        pdf.section_title('TOP AREAS FOR AI BENEFIT')
+        pdf.ranked_list(top_benefit)
+        pdf.ln(1)
+
+    # Governance Concerns
+    if top_gov:
+        pdf.section_title('GOVERNANCE CONCERNS')
+        pdf.ranked_list(top_gov)
+        pdf.ln(1)
+
+    # AI Tools Adoption
+    if top_tools:
+        pdf.section_title('AI TOOLS CURRENTLY USED')
+        pdf.ranked_list(top_tools)
+        pdf.ln(1)
+
+    # Learning Expectations
+    if top_learn:
+        pdf.section_title('LEARNING EXPECTATIONS')
+        pdf.ranked_list(top_learn)
+        pdf.ln(1)
+
+    # Capstone Projects
+    if capstone_themes:
+        pdf.section_title('CAPSTONE PROJECT HIGHLIGHTS')
+        cap_headers = ["Participant", "Subsidiary", "Problem", "Expected Impact"]
+        cap_rows = [[c['name'][:20], c['subsidiary'][:15], c['problem'][:40], c['impact'][:35]] for c in capstone_themes[:15]]
+        pdf.add_table(cap_headers, cap_rows, [35, 30, 65, 60])
+
+    # Individual Submissions Summary
+    pdf.section_title('INDIVIDUAL SUBMISSION SCORES')
+    ind_headers = ["Name", "Subsidiary", "Role", "AI %", "Opp %", "Gov %", "Band"]
+    ind_rows = []
+    for s in sorted(submissions, key=lambda x: x.get('ai_readiness_score', 0), reverse=True):
+        ind_rows.append([
+            s.get('full_name', '')[:20],
+            s.get('subsidiary', '')[:18],
+            s.get('role_level', '')[:12],
+            f"{s.get('ai_readiness_score', 0)}",
+            f"{s.get('opportunity_density_score', 0)}",
+            f"{s.get('governance_sensitivity_score', 0)}",
+            s.get('readiness_band', '')[:20]
+        ])
+    pdf.add_table(ind_headers, ind_rows, [30, 30, 22, 18, 18, 18, 54])
+
+    # Final page — disclaimer
+    pdf.ln(5)
+    pdf.set_draw_color(*ReportPDF.GOLD)
+    pdf.set_line_width(0.3)
+    pdf.line(30, pdf.get_y(), 180, pdf.get_y())
+    pdf.ln(3)
+    pdf.set_font('Helvetica', 'I', 7)
+    pdf.set_text_color(*ReportPDF.GRAY)
+    pdf.multi_cell(0, 4,
+        'This report was generated by the Leadway AI Readiness & Opportunity Scan platform. '
+        'Data is based on self-reported participant responses and should be interpreted alongside '
+        'qualitative assessment. Prepared by Cihan Digital Academy for Leadway Group.'
+    )
+
+    # Output
+    pdf_bytes = pdf.output()
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=Leadway_AI_Readiness_Report.pdf"}
     )
 
 # ==================== POST-EVALUATION ENDPOINTS ====================

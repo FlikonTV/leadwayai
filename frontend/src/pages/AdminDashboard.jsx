@@ -91,6 +91,23 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleExportPDF = async () => {
+    try {
+      toast.info("Generating PDF report...");
+      const response = await axios.get(`${API}/admin/report/pdf`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'Leadway_AI_Readiness_Report.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("PDF report downloaded");
+    } catch (error) {
+      toast.error(error.response?.status === 404 ? "No data for report" : "PDF export failed");
+    }
+  };
+
   const handleLogout = () => {
     sessionStorage.removeItem("leadway_admin");
     navigate("/admin");
@@ -149,8 +166,11 @@ const AdminDashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button onClick={handleExportPDF} size="sm" className="bg-gold/20 text-gold hover:bg-gold hover:text-navy h-8 text-xs" data-testid="export-pdf-btn">
+              <FileText className="w-3.5 h-3.5 mr-1" /> PDF Report
+            </Button>
             <Button onClick={handleExport} size="sm" className="bg-gold/20 text-gold hover:bg-gold hover:text-navy h-8 text-xs" data-testid="export-csv-btn">
-              <Download className="w-3.5 h-3.5 mr-1" /> Export
+              <Download className="w-3.5 h-3.5 mr-1" /> CSV
             </Button>
             <Button onClick={handleLogout} variant="ghost" size="sm" className="text-gray-400 hover:text-white h-8 text-xs" data-testid="logout-btn">
               <LogOut className="w-3.5 h-3.5" />
