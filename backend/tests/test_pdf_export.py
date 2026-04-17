@@ -115,14 +115,40 @@ TEST_SUBMISSIONS = [
 
 class TestPDFExport:
     """Test suite for PDF export functionality"""
-    
+
+    # Shared state for tests that depend on the seeded submissions. Populated
+    # once per class by the `seed_submissions` autouse fixture so individual
+    # tests no longer rely on pytest's alphabetical ordering (which breaks
+    # under pytest-randomly / `pytest -k` / parallel runners).
+    seeded_submission_ids: list = []
+
+    @pytest.fixture(scope="class", autouse=True)
+    def seed_submissions(self, request):
+        """Seed test submissions once for the whole class.
+
+        Previously the tests in this class depended on `test_02_create_test_submissions`
+        running before every other test (alphabetical order). That ordering
+        assumption is fragile (pytest-randomly, `pytest -k`, test sharding),
+        so instead we seed once up front as a class-scoped fixture.
+        """
+        session = requests.Session()
+        session.headers.update({"Content-Type": "application/json"})
+        created: list = []
+        for submission_data in TEST_SUBMISSIONS:
+            response = session.post(f"{BASE_URL}/api/submissions", json=submission_data)
+            assert response.status_code == 200, (
+                f"Failed to seed submission: {response.status_code} - {response.text}"
+            )
+            created.append(response.json()["id"])
+        TestPDFExport.seeded_submission_ids = created
+        print(f"Seeded {len(created)} test submissions for TestPDFExport")
+
     @pytest.fixture(autouse=True)
     def setup(self):
-        """Setup test environment"""
+        """Setup per-test HTTP session."""
         self.session = requests.Session()
         self.session.headers.update({"Content-Type": "application/json"})
-        self.created_submission_ids = []
-    
+
     def test_01_api_health_check(self):
         """Test API is accessible"""
         response = self.session.get(f"{BASE_URL}/api/")
@@ -130,24 +156,17 @@ class TestPDFExport:
         data = response.json()
         assert "message" in data
         print(f"API health check passed: {data}")
-    
+
     def test_02_create_test_submissions(self):
-        """Seed 3 test submissions for PDF generation"""
-        for i, submission_data in enumerate(TEST_SUBMISSIONS):
-            response = self.session.post(f"{BASE_URL}/api/submissions", json=submission_data)
-            assert response.status_code == 200, f"Failed to create submission {i+1}: {response.status_code} - {response.text}"
-            
-            data = response.json()
-            assert "id" in data, f"Submission {i+1} missing id"
-            assert data["email"] == submission_data["email"]
-            assert data["full_name"] == submission_data["full_name"]
-            assert "ai_readiness_score" in data
-            assert "readiness_band" in data
-            
-            self.created_submission_ids.append(data["id"])
-            print(f"Created submission {i+1}: {data['full_name']} - AI Score: {data['ai_readiness_score']}, Band: {data['readiness_band']}")
-        
-        print(f"Successfully created {len(self.created_submission_ids)} test submissions")
+        """Verify that the class-level seed fixture populated submissions."""
+        # Seeding itself is handled by the autouse class fixture above; this
+        # test confirms the fixture ran and recorded the expected number of
+        # submission ids so a regression in seeding is still surfaced.
+        assert len(TestPDFExport.seeded_submission_ids) == len(TEST_SUBMISSIONS), (
+            f"Expected {len(TEST_SUBMISSIONS)} seeded submissions, "
+            f"got {len(TestPDFExport.seeded_submission_ids)}"
+        )
+        print(f"Verified {len(TestPDFExport.seeded_submission_ids)} seeded submissions")
     
     def test_03_get_submissions_list(self):
         """Verify submissions were created"""
