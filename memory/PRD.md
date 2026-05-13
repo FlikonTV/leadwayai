@@ -101,5 +101,4 @@ Build a clean, premium, mobile-friendly internal web app called "Leadway AI Read
 ## Backlog
 - P1: PDF export of individual submissions
 - P2: Refactor server.py into modules (routes/, models/, services/) — currently ~2100+ lines
-- P2: Extract PostEvalTabContent from AdminDashboard into separate file
-- Cleanup: Remove /app/api/ folder (Vercel artifact)
+- P2: Extract PostEvalTabContent + CohortComparisonTab from AdminDashboard into separate files
