@@ -80,6 +80,16 @@ Build a clean, premium, mobile-friendly internal web app called "Leadway AI Read
 - `post_eval_drafts` — Post-training evaluation drafts (includes cohort field)
 
 ## Key Files
+
+### 9. Cohort Comparison Tab (DONE - May 13, 2026)
+- New "Compare" tab in Admin Dashboard with BarChart3 icon
+- Side-by-side Programme Grade cards (gold for C1, teal for C2)
+- Key Metrics table: Pre-Training Submissions, Post-Training Evaluations, Avg AI Readiness, Avg Opportunity Density, Avg Governance Sensitivity, NPS Average, NPS Net Score — with Delta column
+- Readiness Band Distribution grouped bar chart (C1 vs C2)
+- Participation by Subsidiary grouped horizontal bar chart
+- NPS Comparison with stacked progress bars (Promoters/Passives/Detractors)
+- Empty state when no data available
+
 - `/app/backend/server.py` — All API endpoints
 - `/app/frontend/src/pages/LandingPage.jsx` — Landing page with cohort selector
 - `/app/frontend/src/pages/AssessmentForm.jsx` — Pre-training form (reads cohort from localStorage)
