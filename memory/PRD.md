@@ -8,6 +8,19 @@ Build a clean, premium, mobile-friendly internal web app called "Leadway AI Read
 - **Backend**: FastAPI + MongoDB (motor async driver)
 - **Hosting**: Emergent Platform (preview + deployment)
 
+### Backend Structure (Refactored May 13, 2026)
+```
+/app/backend/
+  server.py          (31 lines)  — App setup, middleware, router includes
+  database.py        (23 lines)  — MongoDB connection, constants (COHORTS, SUBSIDIARIES)
+  models.py          (112 lines) — All Pydantic models
+  scoring.py         (148 lines) — Scoring, insights, recommendations
+  routes/
+    core.py          (143 lines) — Root, cohorts, drafts, submissions, admin login
+    admin.py         (860 lines) — Admin stats, insights, report, CSV/PDF export
+    post_eval.py     (829 lines) — Post-eval CRUD, stats, CSV/PDF export
+```
+
 ## Core Features
 
 ### 1. Landing Page (UPDATED - May 13, 2026)
@@ -100,4 +113,3 @@ Build a clean, premium, mobile-friendly internal web app called "Leadway AI Read
 
 ## Backlog
 - P1: PDF export of individual submissions
-- P2: Refactor server.py into modules (routes/, models/, services/) — currently ~2100+ lines
