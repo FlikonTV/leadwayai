@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { Users, Download, LogOut, Search, Filter, Eye, ChevronLeft, ChevronRight, TrendingUp, Shield, Lightbulb, RefreshCw, Loader2, AlertTriangle, CheckCircle, Info, Target, BookOpen, Zap, FileText, Building, UserCheck, Clock, ClipboardCheck, Star, MessageSquare, Rocket } from "lucide-react";
+import { Users, Download, LogOut, Search, Filter, Eye, ChevronLeft, ChevronRight, TrendingUp, Shield, Lightbulb, RefreshCw, Loader2, AlertTriangle, CheckCircle, Info, Target, BookOpen, Zap, FileText, Building, UserCheck, Clock, ClipboardCheck, Star, MessageSquare, Rocket, MapPin } from "lucide-react";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_ai-readiness-scan/artifacts/1nnj8el7_leadway_logo-removebg-preview.png";
@@ -20,6 +20,11 @@ const LOGO_URL = "https://customer-assets.emergentagent.com/job_ai-readiness-sca
 const SUBSIDIARIES = ["Leadway Assurance", "Leadway Pensure", "Leadway Health", "Leadway Asset Management", "Leadway Trustees", "Shared Services", "Other"];
 const READINESS_BANDS = ["Beginner", "Explorer", "Emerging Practitioner", "Applied User", "Champion Candidate"];
 const BAND_COLORS = { "Beginner": "#EF4444", "Explorer": "#F59E0B", "Emerging Practitioner": "#3B82F6", "Applied User": "#10B981", "Champion Candidate": "#D4AF37" };
+const COHORT_OPTIONS = [
+  { value: "all", label: "All Cohorts" },
+  { value: "cohort_1_lagos", label: "Cohort 1 — Lagos" },
+  { value: "cohort_2_abuja", label: "Cohort 2 — Abuja" },
+];
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -36,11 +41,14 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [postEvalStats, setPostEvalStats] = useState(null);
   const [selectedPostEval, setSelectedPostEval] = useState(null);
+  const [cohortFilter, setCohortFilter] = useState("all");
   const pageSize = 8;
 
   const loadPostEvalDetail = async (evalSummary) => {
     try {
-      const res = await axios.get(`${API}/post-evaluations`, { params: { limit: 200 } });
+      const params = { limit: 200 };
+      if (cohortFilter && cohortFilter !== "all") params.cohort = cohortFilter;
+      const res = await axios.get(`${API}/post-evaluations`, { params });
       const full = res.data.evaluations.find(e => e.id === evalSummary.id);
       setSelectedPostEval(full || evalSummary);
     } catch { setSelectedPostEval(evalSummary); }
@@ -50,19 +58,21 @@ const AdminDashboard = () => {
     if (!sessionStorage.getItem("leadway_admin")) { navigate("/admin"); return; }
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate]);
+  }, [navigate, cohortFilter]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetchSubmissions(); }, [subsidiaryFilter, bandFilter, currentPage]);
+  useEffect(() => { fetchSubmissions(); }, [subsidiaryFilter, bandFilter, currentPage, cohortFilter]);
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
+      const cohortParam = cohortFilter && cohortFilter !== "all" ? cohortFilter : undefined;
+      const params = cohortParam ? { cohort: cohortParam } : {};
       const [statsRes, submissionsRes, reportRes, postEvalRes] = await Promise.all([
-        axios.get(`${API}/admin/stats`),
-        axios.get(`${API}/submissions`, { params: { limit: pageSize, skip: 0 } }),
-        axios.get(`${API}/admin/report`),
-        axios.get(`${API}/admin/post-eval-stats`).catch(() => ({ data: { total: 0 } }))
+        axios.get(`${API}/admin/stats`, { params }),
+        axios.get(`${API}/submissions`, { params: { limit: pageSize, skip: 0, ...params } }),
+        axios.get(`${API}/admin/report`, { params }),
+        axios.get(`${API}/admin/post-eval-stats`, { params }).catch(() => ({ data: { total: 0 } }))
       ]);
       setStats(statsRes.data);
       setSubmissions(submissionsRes.data.submissions);
@@ -81,6 +91,7 @@ const AdminDashboard = () => {
       const params = { limit: pageSize, skip: currentPage * pageSize };
       if (subsidiaryFilter && subsidiaryFilter !== "all") params.subsidiary = subsidiaryFilter;
       if (bandFilter && bandFilter !== "all") params.readiness_band = bandFilter;
+      if (cohortFilter && cohortFilter !== "all") params.cohort = cohortFilter;
       const response = await axios.get(`${API}/submissions`, { params });
       setSubmissions(response.data.submissions);
       setTotalSubmissions(response.data.total);
@@ -89,7 +100,9 @@ const AdminDashboard = () => {
 
   const handleExport = async () => {
     try {
-      const response = await axios.get(`${API}/admin/export`, { responseType: 'blob' });
+      const params = {};
+      if (cohortFilter && cohortFilter !== "all") params.cohort = cohortFilter;
+      const response = await axios.get(`${API}/admin/export`, { params, responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -106,7 +119,9 @@ const AdminDashboard = () => {
   const handleExportPDF = async () => {
     try {
       toast.info("Generating PDF report...");
-      const response = await axios.get(`${API}/admin/report/pdf`, { responseType: 'blob' });
+      const params = {};
+      if (cohortFilter && cohortFilter !== "all") params.cohort = cohortFilter;
+      const response = await axios.get(`${API}/admin/report/pdf`, { params, responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
@@ -178,6 +193,17 @@ const AdminDashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Select value={cohortFilter} onValueChange={(v) => { setCohortFilter(v); setCurrentPage(0); }}>
+              <SelectTrigger className="w-[160px] h-8 text-xs bg-white/10 border-white/20 text-white" data-testid="cohort-filter">
+                <MapPin className="w-3 h-3 mr-1 text-gold" />
+                <SelectValue placeholder="All Cohorts" />
+              </SelectTrigger>
+              <SelectContent>
+                {COHORT_OPTIONS.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button onClick={handleExportPDF} size="sm" className="bg-gold/20 text-gold hover:bg-gold hover:text-navy h-8 text-xs" data-testid="export-pdf-btn">
               <FileText className="w-3.5 h-3.5 mr-1" /> PDF Report
             </Button>
@@ -516,7 +542,7 @@ const AdminDashboard = () => {
           {/* Post-Eval Tab */}
           <TabsContent value="posteval" className="space-y-4">
             {postEvalStats?.total > 0 ? (
-              <PostEvalTabContent stats={postEvalStats} onViewDetail={loadPostEvalDetail} />
+              <PostEvalTabContent stats={postEvalStats} onViewDetail={loadPostEvalDetail} cohortFilter={cohortFilter} />
             ) : (
               <Card className="bg-white border-0 shadow-sm">
                 <CardContent className="p-12 text-center">
@@ -770,8 +796,9 @@ const RatingBar = ({ label, value, max = 5 }) => (
   </div>
 );
 
-const PostEvalTabContent = ({ stats, onViewDetail }) => {
+const PostEvalTabContent = ({ stats, onViewDetail, cohortFilter }) => {
   const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+  const cohortParam = cohortFilter && cohortFilter !== "all" ? cohortFilter : undefined;
   const npsData = [
     { name: "Promoters (9-10)", value: stats.nps?.distribution?.promoters || 0 },
     { name: "Passives (7-8)", value: stats.nps?.distribution?.passives || 0 },
@@ -788,7 +815,9 @@ const PostEvalTabContent = ({ stats, onViewDetail }) => {
   const handleExportPDF = async () => {
     try {
       toast.info("Generating consulting report...");
-      const response = await axios.get(`${API}/admin/post-eval-report/pdf`, { responseType: 'blob' });
+      const params = {};
+      if (cohortParam) params.cohort = cohortParam;
+      const response = await axios.get(`${API}/admin/post-eval-report/pdf`, { params, responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
@@ -804,7 +833,9 @@ const PostEvalTabContent = ({ stats, onViewDetail }) => {
 
   const handleExportCSV = async () => {
     try {
-      const response = await axios.get(`${API}/admin/post-eval-export`, { responseType: 'blob' });
+      const params = {};
+      if (cohortParam) params.cohort = cohortParam;
+      const response = await axios.get(`${API}/admin/post-eval-export`, { params, responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;

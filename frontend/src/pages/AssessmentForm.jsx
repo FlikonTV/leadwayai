@@ -54,6 +54,7 @@ const AssessmentForm = () => {
   });
 
   const email = localStorage.getItem("leadway_email") || "";
+  const cohort = localStorage.getItem("leadway_cohort") || "cohort_2_abuja";
 
   useEffect(() => {
     if (!email && !isSubmittingRef.current) { navigate("/"); return; }
@@ -149,8 +150,9 @@ const AssessmentForm = () => {
     setIsSaving(true);
     isSubmittingRef.current = true;
     try {
-      await axios.post(`${API}/submissions`, formData);
+      await axios.post(`${API}/submissions`, { ...formData, cohort });
       localStorage.removeItem("leadway_email");
+      localStorage.removeItem("leadway_cohort");
       navigate("/thank-you", { replace: true });
     } catch (error) {
       isSubmittingRef.current = false;

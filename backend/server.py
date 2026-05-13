@@ -27,6 +27,11 @@ api_router = APIRouter(prefix="/api")
 
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'leadway2026')
 
+COHORTS = {
+    "cohort_1_lagos": {"label": "Cohort 1 — Lagos", "dates": "April 13-15, 2026", "city": "Lagos"},
+    "cohort_2_abuja": {"label": "Cohort 2 — Abuja", "dates": "May 15-18, 2026", "city": "Abuja"},
+}
+
 SUBSIDIARIES = [
     "Leadway Assurance", "Leadway Pensure", "Leadway Health",
     "Leadway Asset Management", "Leadway Trustees", "Shared Services", "Other"
@@ -54,6 +59,7 @@ class Submission(BaseModel):
     department: str
     years_in_role: str
     role_level: str
+    cohort: str = "cohort_2_abuja"
     ai_familiarity: int = 1
     ai_tools_used: List[str] = []
     usage_frequency: str = ""
@@ -97,6 +103,7 @@ class SubmissionCreate(BaseModel):
     department: str
     years_in_role: str
     role_level: str
+    cohort: str = "cohort_2_abuja"
     ai_familiarity: int = 1
     ai_tools_used: List[str] = []
     usage_frequency: str = ""
@@ -352,6 +359,23 @@ async def root():
 async def get_subsidiaries():
     return {"subsidiaries": SUBSIDIARIES}
 
+@api_router.get("/cohorts")
+async def get_cohorts():
+    return {"cohorts": COHORTS}
+
+@api_router.post("/admin/migrate-cohorts")
+async def migrate_cohorts():
+    """Tag existing submissions without cohort as cohort_1_lagos"""
+    result = await db.submissions.update_many(
+        {"cohort": {"$exists": False}},
+        {"$set": {"cohort": "cohort_1_lagos"}}
+    )
+    result2 = await db.drafts.update_many(
+        {"cohort": {"$exists": False}},
+        {"$set": {"cohort": "cohort_1_lagos"}}
+    )
+    return {"submissions_tagged": result.modified_count, "drafts_tagged": result2.modified_count}
+
 # Draft endpoints
 @api_router.post("/drafts")
 async def save_draft(draft_input: DraftCreate):
@@ -419,6 +443,7 @@ async def get_submissions(
     subsidiary: Optional[str] = None,
     department: Optional[str] = None,
     readiness_band: Optional[str] = None,
+    cohort: Optional[str] = None,
     skip: int = 0,
     limit: int = 100
 ):
@@ -429,6 +454,8 @@ async def get_submissions(
         query["department"] = department
     if readiness_band:
         query["readiness_band"] = readiness_band
+    if cohort:
+        query["cohort"] = cohort
     
     submissions = await db.submissions.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
     total = await db.submissions.count_documents(query)
@@ -450,23 +477,25 @@ async def admin_login(login: AdminLogin):
     raise HTTPException(status_code=401, detail="Invalid password")
 
 @api_router.get("/admin/stats")
-async def get_admin_stats():
-    total_submissions = await db.submissions.count_documents({})
+async def get_admin_stats(cohort: Optional[str] = None):
+    base_query = {"cohort": cohort} if cohort else {}
+    total_submissions = await db.submissions.count_documents(base_query)
     
     # Aggregate by subsidiary
-    subsidiary_pipeline = [{"$group": {"_id": "$subsidiary", "count": {"$sum": 1}}}]
+    pipeline_match = [{"$match": base_query}] if base_query else []
+    subsidiary_pipeline = pipeline_match + [{"$group": {"_id": "$subsidiary", "count": {"$sum": 1}}}]
     subsidiary_stats = await db.submissions.aggregate(subsidiary_pipeline).to_list(20)
     
     # Aggregate by readiness band
-    band_pipeline = [{"$group": {"_id": "$readiness_band", "count": {"$sum": 1}}}]
+    band_pipeline = pipeline_match + [{"$group": {"_id": "$readiness_band", "count": {"$sum": 1}}}]
     band_stats = await db.submissions.aggregate(band_pipeline).to_list(10)
     
     # Aggregate by department
-    dept_pipeline = [{"$group": {"_id": "$department", "count": {"$sum": 1}}}]
+    dept_pipeline = pipeline_match + [{"$group": {"_id": "$department", "count": {"$sum": 1}}}]
     dept_stats = await db.submissions.aggregate(dept_pipeline).to_list(50)
     
     # Average scores
-    avg_pipeline = [
+    avg_pipeline = pipeline_match + [
         {"$group": {
             "_id": None,
             "avg_ai_readiness": {"$avg": "$ai_readiness_score"},
@@ -477,7 +506,7 @@ async def get_admin_stats():
     avg_stats = await db.submissions.aggregate(avg_pipeline).to_list(1)
     
     # Top pain points
-    pain_pipeline = [
+    pain_pipeline = pipeline_match + [
         {"$unwind": "$workflow_pain_points"},
         {"$group": {"_id": "$workflow_pain_points", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
@@ -486,7 +515,7 @@ async def get_admin_stats():
     pain_stats = await db.submissions.aggregate(pain_pipeline).to_list(10)
     
     # Top AI benefit areas
-    benefit_pipeline = [
+    benefit_pipeline = pipeline_match + [
         {"$unwind": "$areas_benefit_ai"},
         {"$group": {"_id": "$areas_benefit_ai", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
@@ -495,7 +524,7 @@ async def get_admin_stats():
     benefit_stats = await db.submissions.aggregate(benefit_pipeline).to_list(10)
     
     # Top governance concerns
-    concern_pipeline = [
+    concern_pipeline = pipeline_match + [
         {"$unwind": "$governance_concerns"},
         {"$group": {"_id": "$governance_concerns", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
@@ -504,7 +533,7 @@ async def get_admin_stats():
     concern_stats = await db.submissions.aggregate(concern_pipeline).to_list(10)
     
     # Learning expectations
-    learning_pipeline = [
+    learning_pipeline = pipeline_match + [
         {"$unwind": "$learning_expectations"},
         {"$group": {"_id": "$learning_expectations", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
@@ -513,7 +542,7 @@ async def get_admin_stats():
     learning_stats = await db.submissions.aggregate(learning_pipeline).to_list(10)
     
     # AI tools usage
-    tools_pipeline = [
+    tools_pipeline = pipeline_match + [
         {"$unwind": "$ai_tools_used"},
         {"$group": {"_id": "$ai_tools_used", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
@@ -522,10 +551,10 @@ async def get_admin_stats():
     tools_stats = await db.submissions.aggregate(tools_pipeline).to_list(10)
     
     # Role level distribution
-    role_pipeline = [{"$group": {"_id": "$role_level", "count": {"$sum": 1}}}]
+    role_pipeline = pipeline_match + [{"$group": {"_id": "$role_level", "count": {"$sum": 1}}}]
     role_stats = await db.submissions.aggregate(role_pipeline).to_list(10)
     
-    departments = await db.submissions.distinct("department")
+    departments = await db.submissions.distinct("department", base_query)
     
     return {
         "total_submissions": total_submissions,
@@ -543,14 +572,15 @@ async def get_admin_stats():
     }
 
 @api_router.get("/admin/insights")
-async def get_organization_insights():
+async def get_organization_insights(cohort: Optional[str] = None):
     """Get organization-wide AI readiness insights"""
-    total = await db.submissions.count_documents({})
+    base_query = {"cohort": cohort} if cohort else {}
+    total = await db.submissions.count_documents(base_query)
     if total == 0:
         return {"message": "No submissions yet", "insights": []}
     
     # Get all submissions for analysis
-    submissions = await db.submissions.find({}, {"_id": 0}).to_list(1000)
+    submissions = await db.submissions.find(base_query, {"_id": 0}).to_list(1000)
     
     insights = []
     
@@ -647,13 +677,14 @@ async def get_organization_insights():
     }
 
 @api_router.get("/admin/report")
-async def get_comprehensive_report():
+async def get_comprehensive_report(cohort: Optional[str] = None):
     """Generate a comprehensive organization-wide AI readiness report"""
-    total = await db.submissions.count_documents({})
+    base_query = {"cohort": cohort} if cohort else {}
+    total = await db.submissions.count_documents(base_query)
     if total == 0:
         return {"message": "No submissions yet", "report": None}
     
-    submissions = await db.submissions.find({}, {"_id": 0}).to_list(1000)
+    submissions = await db.submissions.find(base_query, {"_id": 0}).to_list(1000)
     
     # Calculate overall statistics
     avg_ai = sum(s.get('ai_readiness_score', 0) for s in submissions) / total
@@ -877,8 +908,9 @@ async def get_comprehensive_report():
 
 
 @api_router.get("/admin/export")
-async def export_csv():
-    submissions = await db.submissions.find({}, {"_id": 0}).to_list(10000)
+async def export_csv(cohort: Optional[str] = None):
+    base_query = {"cohort": cohort} if cohort else {}
+    submissions = await db.submissions.find(base_query, {"_id": 0}).to_list(10000)
     
     if not submissions:
         raise HTTPException(status_code=404, detail="No submissions to export")
@@ -1058,13 +1090,14 @@ class ReportPDF(FPDF):
 
 
 @api_router.get("/admin/report/pdf")
-async def export_report_pdf():
+async def export_report_pdf(cohort: Optional[str] = None):
     """Generate a comprehensive PDF report for stakeholders"""
-    total = await db.submissions.count_documents({})
+    base_query = {"cohort": cohort} if cohort else {}
+    total = await db.submissions.count_documents(base_query)
     if total == 0:
         raise HTTPException(status_code=404, detail="No submissions to generate report")
 
-    submissions = await db.submissions.find({}, {"_id": 0}).to_list(1000)
+    submissions = await db.submissions.find(base_query, {"_id": 0}).to_list(1000)
 
     # Compute all stats (same as /admin/report)
     avg_ai = round(sum(s.get('ai_readiness_score', 0) for s in submissions) / total, 1)
@@ -1295,10 +1328,12 @@ async def export_report_pdf():
 
 class PostEvalDraftCreate(BaseModel):
     email: str
+    cohort: str = "cohort_1_lagos"
     data: Dict[str, Any] = {}
 
 class PostEvalSubmissionCreate(BaseModel):
     email: str
+    cohort: str = "cohort_1_lagos"
     data: Dict[str, Any] = {}
 
 @api_router.post("/post-eval-drafts")
@@ -1307,13 +1342,14 @@ async def save_post_eval_draft(draft_input: PostEvalDraftCreate):
     if existing:
         await db.post_eval_drafts.update_one(
             {"email": draft_input.email},
-            {"$set": {"data": draft_input.data, "updated_at": datetime.now(timezone.utc).isoformat()}}
+            {"$set": {"data": draft_input.data, "cohort": draft_input.cohort, "updated_at": datetime.now(timezone.utc).isoformat()}}
         )
         return {"message": "Draft updated", "email": draft_input.email}
     else:
         doc = {
             "id": str(uuid.uuid4()),
             "email": draft_input.email,
+            "cohort": draft_input.cohort,
             "data": draft_input.data,
             "updated_at": datetime.now(timezone.utc).isoformat()
         }
@@ -1332,6 +1368,7 @@ async def create_post_evaluation(submission: PostEvalSubmissionCreate):
     doc = {
         "id": str(uuid.uuid4()),
         "email": submission.email,
+        "cohort": submission.cohort,
         "data": submission.data,
         "submitted_at": datetime.now(timezone.utc).isoformat()
     }
@@ -1341,20 +1378,24 @@ async def create_post_evaluation(submission: PostEvalSubmissionCreate):
     return doc
 
 @api_router.get("/post-evaluations")
-async def get_post_evaluations(skip: int = 0, limit: int = 100):
-    evaluations = await db.post_evaluations.find({}, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
-    total = await db.post_evaluations.count_documents({})
+async def get_post_evaluations(skip: int = 0, limit: int = 100, cohort: Optional[str] = None):
+    query = {}
+    if cohort:
+        query["cohort"] = cohort
+    evaluations = await db.post_evaluations.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
+    total = await db.post_evaluations.count_documents(query)
     return {"evaluations": evaluations, "total": total}
 
 
 @api_router.get("/admin/post-eval-stats")
-async def get_post_eval_stats():
+async def get_post_eval_stats(cohort: Optional[str] = None):
     """Aggregate post-evaluation data for admin dashboard"""
-    total = await db.post_evaluations.count_documents({})
+    base_query = {"cohort": cohort} if cohort else {}
+    total = await db.post_evaluations.count_documents(base_query)
     if total == 0:
         return {"total": 0, "message": "No post-evaluations yet"}
 
-    evals = await db.post_evaluations.find({}, {"_id": 0}).to_list(1000)
+    evals = await db.post_evaluations.find(base_query, {"_id": 0}).to_list(1000)
 
     # NPS
     nps_scores = [e["data"].get("nps_score") for e in evals if e.get("data", {}).get("nps_score") is not None]
@@ -1551,9 +1592,10 @@ def _compute_capability_shift(evals, total):
 
 
 @api_router.get("/admin/post-eval-export")
-async def export_post_eval_csv():
+async def export_post_eval_csv(cohort: Optional[str] = None):
     """Export all post-evaluation responses as CSV"""
-    evals = await db.post_evaluations.find({}, {"_id": 0}).to_list(1000)
+    base_query = {"cohort": cohort} if cohort else {}
+    evals = await db.post_evaluations.find(base_query, {"_id": 0}).to_list(1000)
     if not evals:
         raise HTTPException(status_code=404, detail="No evaluations to export")
 
@@ -1637,13 +1679,14 @@ async def export_post_eval_csv():
 
 
 @api_router.get("/admin/post-eval-report/pdf")
-async def export_post_eval_report_pdf():
+async def export_post_eval_report_pdf(cohort: Optional[str] = None):
     """Generate consulting-grade PDF report for post-evaluation"""
-    total = await db.post_evaluations.count_documents({})
+    base_query = {"cohort": cohort} if cohort else {}
+    total = await db.post_evaluations.count_documents(base_query)
     if total == 0:
         raise HTTPException(status_code=404, detail="No evaluations to generate report")
 
-    evals = await db.post_evaluations.find({}, {"_id": 0}).to_list(1000)
+    evals = await db.post_evaluations.find(base_query, {"_id": 0}).to_list(1000)
 
     # ---- Compute all metrics ----
     from collections import Counter

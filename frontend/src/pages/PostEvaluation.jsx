@@ -185,6 +185,7 @@ const PostEvaluation = () => {
   const [email, setEmail] = useState("");
   const [emailInput, setEmailInput] = useState("");
   const [emailError, setEmailError] = useState("");
+  const cohort = localStorage.getItem("leadway_cohort") || "cohort_1_lagos";
 
   const loadDraft = useCallback(async (userEmail) => {
     setIsLoading(true);
@@ -205,14 +206,14 @@ const PostEvaluation = () => {
     if (!email) return;
     setIsSaving(true);
     try {
-      await axios.post(`${API}/post-eval-drafts`, { email, data: formData });
+      await axios.post(`${API}/post-eval-drafts`, { email, cohort, data: formData });
       toast.success("Saved", { duration: 1000 });
     } catch (error) {
       toast.error("Save failed");
     } finally {
       setIsSaving(false);
     }
-  }, [email, formData]);
+  }, [email, formData, cohort]);
 
   useEffect(() => {
     if (!email) return;
