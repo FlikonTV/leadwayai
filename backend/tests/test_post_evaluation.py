@@ -96,8 +96,11 @@ class TestPostEvalDrafts:
     
     def test_get_nonexistent_draft(self, api_client):
         """Test getting a draft that doesn't exist"""
-        response = api_client.get(f"{BASE_URL}/api/post-eval-drafts/nonexistent@test.com")
-        
+        # Use a unique email per test run so a previously persisted draft
+        # with the same hardcoded address cannot cause a false 200 response.
+        unique_email = f"TEST_nonexistent_{uuid.uuid4().hex}@test.com"
+        response = api_client.get(f"{BASE_URL}/api/post-eval-drafts/{unique_email}")
+
         assert response.status_code == 404
         assert "No draft found" in response.json()["detail"]
         print(f"✓ 404 returned for nonexistent draft")

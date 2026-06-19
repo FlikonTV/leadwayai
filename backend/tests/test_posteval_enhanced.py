@@ -200,15 +200,22 @@ class TestPostEvalCSVExport:
     
     def test_csv_export_has_data_rows(self):
         """Test that CSV has data rows (not just headers)"""
+        import csv
+        import io
+
         response = requests.get(f"{BASE_URL}/api/admin/post-eval-export")
         assert response.status_code == 200
-        
+
+        # Parse the CSV properly instead of splitting on '\n' — free-text fields
+        # (e.g. most_valuable, final_words) may contain embedded newlines inside
+        # quoted values, which would make a naive line count unreliable.
         content = response.content.decode('utf-8')
-        lines = content.strip().split('\n')
-        
+        reader = csv.reader(io.StringIO(content))
+        rows = list(reader)
+
         # Should have header + at least 1 data row
-        assert len(lines) >= 2, f"CSV should have data rows, only has {len(lines)} lines"
-        print(f"PASS: CSV has {len(lines) - 1} data rows")
+        assert len(rows) >= 2, f"CSV should have data rows, only has {len(rows)} rows"
+        print(f"PASS: CSV has {len(rows) - 1} data rows")
 
 
 class TestPostEval404Cases:

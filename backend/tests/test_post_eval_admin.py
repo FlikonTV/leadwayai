@@ -162,16 +162,23 @@ class TestPostEvalStatsEndpoint:
             assert "submissions" in data, "Response should contain 'submissions'"
             submissions = data["submissions"]
             assert isinstance(submissions, list), "submissions should be a list"
-            assert len(submissions) == data["total"], "submissions count should match total"
-            
+            # The server caps the evaluations list at 1000 (see `to_list(1000)`),
+            # so once the collection grows beyond that cap the list length will
+            # be smaller than total. Require at most `total` and at least one
+            # entry when there are any submissions.
+            assert len(submissions) > 0, "submissions should not be empty when total > 0"
+            assert len(submissions) <= data["total"], (
+                f"submissions count ({len(submissions)}) should not exceed total ({data['total']})"
+            )
+
             if len(submissions) > 0:
                 sub = submissions[0]
-                required_fields = ["id", "email", "full_name", "subsidiary_department", 
+                required_fields = ["id", "email", "full_name", "subsidiary_department",
                                    "readiness_level", "nps_score", "submitted_at"]
                 for field in required_fields:
                     assert field in sub, f"Submission should have '{field}'"
-            
-            print(f"PASS: Submissions list present with {len(submissions)} entries")
+
+            print(f"PASS: Submissions list present with {len(submissions)} entries (total={data['total']})")
         else:
             print("SKIP: No evaluations to test submissions list")
 
